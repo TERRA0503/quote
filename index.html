@@ -315,7 +315,7 @@ const store = {
 };
 const DEFAULT_TERMS = {
   notes: '· 대형건조기 설치비 및 배송비 포함 여부는 별도 협의합니다.\n· 제품 사양은 성능 개선을 위해 사전 예고 없이 변경될 수 있습니다.',
-  tDue: '발주 후 7일 이내', tPlace: '귀사 지정 장소', tPay: '계약금 30% / 잔금 납품 후', tAs: '구입일로부터 무상 1년', valid: '견적일로부터 30일'
+  tDue: '발주 후 20일 이내', tPlace: '귀사 지정 장소', tPay: '계약금 30% / 잔금 납품 후', tAs: '구입일로부터 무상 1년', valid: '견적일로부터 30일'
 };
 const TERM_KEYS = Object.keys(DEFAULT_TERMS);
 
@@ -335,6 +335,7 @@ function bumpNo(){
 
 /* 품목 입력 */
 function addItem(d = {}){
+  d = { ...d, unit: d.unit || '대', qty: d.qty || '1' };
   const el = document.createElement('div');
   el.className = 'item';
   el.innerHTML = `
@@ -455,6 +456,7 @@ function saveDraft(){
 }
 function load(){
   const terms = store.get('terms', DEFAULT_TERMS);
+  if(terms.tDue === '발주 후 7일 이내') terms.tDue = DEFAULT_TERMS.tDue;
   TERM_KEYS.forEach(k => $(k).value = terms[k] ?? DEFAULT_TERMS[k]);
   const d = store.get('draft2', null);
   if(d){
