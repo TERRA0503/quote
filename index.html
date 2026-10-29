@@ -104,7 +104,7 @@
   .to{border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column}
   .lbl{font-size:10.5px;font-weight:800;color:var(--blue);letter-spacing:2px}
   .to .client{font-size:19px;font-weight:800;color:var(--navy);margin-top:8px;border-bottom:1px solid var(--navy);padding-bottom:4px;display:flex;align-items:baseline;gap:6px}
-  .to .client span{flex:1;min-height:1.2em}
+  .to .client span{flex:1;min-height:1.2em;text-align:center}
   .to .client small{font-size:13px;font-weight:600;color:var(--ink)}
   .to dl{display:grid;grid-template-columns:52px 1fr;gap:5px 6px;margin-top:10px;font-size:12px}
   .to dt{color:var(--sub)}
@@ -128,12 +128,13 @@
   .banner .num small{font-size:11px;font-weight:600;color:var(--sub);margin-left:4px}
   .items{margin-top:14px;font-size:12px}
   .items thead th{background:var(--pale);color:var(--navy);font-weight:800;padding:8px 4px;border-top:2px solid var(--navy);border-bottom:1px solid var(--sky);font-size:11.5px}
-  .items td{border-bottom:1px solid var(--line);padding:6px 5px;height:29px;vertical-align:middle}
+  .items td{border-bottom:1px solid var(--line);padding:6px 8px;height:29px;vertical-align:middle}
   .items .c{text-align:center}
   .items .r{text-align:right;font-variant-numeric:tabular-nums}
   .items td.no{color:var(--blue);font-weight:800;text-align:center}
   .items td.nm{font-weight:700;color:var(--navy)}
   .items tfoot td{padding:7px 8px;font-weight:700}
+  .items thead th.r{text-align:right;padding-right:8px}
   .items tfoot tr.sum td{background:#f4f7fb;color:var(--navy)}
   .items tfoot tr.grand td{background:var(--pale);color:var(--navy);font-size:14px;font-weight:900;border-top:1px solid var(--sky);border-bottom:2px solid var(--navy)}
   .bottom{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-top:14px}
@@ -262,8 +263,8 @@
           <div class="num"><span id="sNum"></span><small>VAT 포함</small></div>
         </div>
         <table class="items">
-          <colgroup><col style="width:30px"><col><col style="width:16%"><col style="width:48px"><col style="width:40px"><col style="width:13%"><col style="width:14%"><col style="width:16%"></colgroup>
-          <thead><tr><th>No</th><th>품명</th><th>규격</th><th>수량</th><th>단위</th><th id="sPriceH">단가</th><th>공급가액</th><th>비고</th></tr></thead>
+          <colgroup><col style="width:30px"><col><col style="width:16%"><col style="width:48px"><col style="width:40px"><col style="width:15%"><col style="width:15%"><col style="width:13%"></colgroup>
+          <thead><tr><th>No</th><th>품명</th><th>규격</th><th class="r">수량</th><th>단위</th><th id="sPriceH" class="r">단가</th><th class="r">공급가액</th><th>비고</th></tr></thead>
           <tbody id="sRows"></tbody>
           <tfoot>
             <tr class="sum"><td colspan="6" class="r">공급가액</td><td class="r" id="sSub"></td><td></td></tr>
