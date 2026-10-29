@@ -178,11 +178,7 @@
 
     <section class="card">
       <h2>판매 품목</h2>
-      <div class="seg" role="radiogroup" aria-label="부가세">
-        <input type="radio" name="vat" id="vatEx" value="ex" checked><label for="vatEx">부가세 별도</label>
-        <input type="radio" name="vat" id="vatIn" value="in"><label for="vatIn">부가세 포함</label>
-      </div>
-      <p class="hint" id="vatHint"></p>
+      <p class="hint" id="vatHint" style="margin-top:0">단가는 부가세 포함 금액으로 적어 주세요. 공급가액과 부가세는 자동으로 나눠서 표시돼요.</p>
       <div class="items-list" id="itemsForm"></div>
       <button class="add" onclick="addItem()">+ 품목 추가</button>
       <div class="sumbox">
@@ -375,7 +371,7 @@ function fillDatalist(){
   dl.innerHTML = Object.keys(p).map(n => `<option value="${n.replace(/"/g, '&quot;')}">`).join('');
 }
 
-function vatMode(){ return document.querySelector('input[name=vat]:checked').value; }
+function vatMode(){ return 'in'; }
 
 /* 한글 금액 */
 function toKorean(n){
@@ -412,9 +408,6 @@ function render(){
     const r = c.rows[i];
     el.querySelector('.amt').textContent = r && r.line ? `금액 ${fmt(r.line)}원` : '';
   });
-  $('vatHint').textContent = c.inc
-    ? '입력한 단가에 부가세가 들어 있어요. 합계에서 공급가액과 부가세를 나눠서 표시해요.'
-    : '입력한 단가는 공급가액이에요. 부가세 10%를 더해서 합계를 계산해요.';
   $('fSub').textContent = fmt(c.sub) + '원'; $('fVat').textContent = fmt(c.vat) + '원'; $('fGrand').textContent = fmt(c.grand) + '원';
 
   // 시트
@@ -466,7 +459,6 @@ function load(){
   const d = store.get('draft2', null);
   if(d){
     FORM_KEYS.forEach(k => { if(d[k] != null) $(k).value = d[k]; });
-    $(d.vat === 'in' ? 'vatIn' : 'vatEx').checked = true;
     (d.items && d.items.length ? d.items : [{}]).forEach(addItem);
   } else {
     $('date').value = today(); $('qno').value = nextNo(today());
@@ -500,7 +492,6 @@ document.addEventListener('input', e => {
   if(t.id === 'date' && /^GV-/.test($('qno').value)) $('qno').value = nextNo(t.value);
   render();
 });
-document.addEventListener('change', e => { if(e.target.name === 'vat') render(); });
 window.addEventListener('beforeprint', () => { bumpNo(); rememberProducts(readItems()); });
 
 /* 견적서 → 이미지 / PDF */
