@@ -466,6 +466,7 @@ function load(){
     $('date').value = today(); $('qno').value = nextNo(today());
     addItem();
   }
+  if(/7일/.test($('tDue').value)) $('tDue').value = DEFAULT_TERMS.tDue;
 }
 function newQuote(){
   bumpNo(); rememberProducts(readItems());
