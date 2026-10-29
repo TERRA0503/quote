@@ -497,10 +497,27 @@ function newQuote(){
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+/* 전화번호 자동 하이픈: 010-0000-0000, 02-000-0000, 031-000-0000, 1588-0000 */
+function fmtPhone(v){
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  if(/^(15|16|18)/.test(d)) return d.length > 4 ? d.slice(0, 4) + '-' + d.slice(4, 8) : d;
+  if(d.startsWith('02')){
+    if(d.length <= 2) return d;
+    if(d.length <= 5) return d.slice(0, 2) + '-' + d.slice(2);
+    const mid = d.length === 10 ? 4 : 3;
+    return d.slice(0, 2) + '-' + d.slice(2, 2 + mid) + '-' + d.slice(2 + mid, 10);
+  }
+  if(d.length <= 3) return d;
+  if(d.length <= 7) return d.slice(0, 3) + '-' + d.slice(3);
+  const mid = d.length === 11 ? 4 : 3;
+  return d.slice(0, 3) + '-' + d.slice(3, 3 + mid) + '-' + d.slice(3 + mid);
+}
+
 /* 입력 이벤트 */
 document.addEventListener('input', e => {
   const t = e.target;
   if(t.dataset.f === 'price'){ const v = num(t.value); t.value = v ? fmt(v) : ''; }
+  if(t.id === 'phone') t.value = fmtPhone(t.value);
   if(t.dataset.f === 'name'){
     const p = store.get('products', {})[t.value];
     if(p){
