@@ -41,6 +41,8 @@
   .f textarea{resize:vertical;min-height:84px;line-height:1.5;font-size:14px}
   .f input:focus,.f select:focus,.f textarea:focus{outline:2px solid var(--sky);border-color:var(--blue)}
   .full{grid-column:1/-1}
+  .f input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;height:46px;line-height:24px;text-align:left}
+  .f input[type=date]::-webkit-date-and-time-value{text-align:left}
 
   .seg{display:grid;grid-template-columns:1fr 1fr;background:var(--pale);border-radius:10px;padding:4px;gap:4px}
   .seg input{position:absolute;opacity:0;pointer-events:none}
@@ -343,11 +345,11 @@ function addItem(d = {}){
     <span class="no"></span>
     <button class="del" title="삭제" aria-label="품목 삭제">✕</button>
     <label class="f full">품명<input data-f="name" list="products" placeholder="예) 대형건조기" autocomplete="off"></label>
-    <label class="f">규격<input data-f="spec" placeholder="예) 50kg"></label>
-    <label class="f">단위<input data-f="unit" placeholder="대, 통, 개"></label>
-    <label class="f">수량<input data-f="qty" inputmode="numeric" placeholder="1"></label>
-    <label class="f"><span class="ph">단가</span><input data-f="price" inputmode="numeric" placeholder="0"></label>
-    <label class="f full">비고<input data-f="memo" placeholder="예) 설치 포함"></label>
+    <label class="f">규격<input data-f="spec" placeholder="예) 업소용 50kg"></label>
+    <label class="f">단위<input data-f="unit" placeholder="예) 대"></label>
+    <label class="f">수량<input data-f="qty" inputmode="numeric" placeholder="예) 1"></label>
+    <label class="f"><span class="ph">단가</span><input data-f="price" inputmode="numeric" placeholder="예) 2,850,000"></label>
+    <label class="f full">비고<input data-f="memo" placeholder="예) 설치 별도"></label>
     <div class="amt"></div>`;
   for(const [k, v] of Object.entries(d)){ const i = el.querySelector(`[data-f="${k}"]`); if(i) i.value = k === 'price' && v ? fmt(num(v)) : v; }
   el.querySelector('.del').onclick = () => { el.remove(); if(!$('itemsForm').children.length) addItem(); render(); };
@@ -455,21 +457,20 @@ const FORM_KEYS = ['client', 'person', 'phone', 'email', 'date', 'qno', ...TERM_
 function saveDraft(){
   const d = { vat: vatMode(), items: readItems() };
   FORM_KEYS.forEach(k => d[k] = $(k).value);
-  store.set('draft', d);
+  store.set('draft2', d);
   const terms = {}; TERM_KEYS.forEach(k => terms[k] = $(k).value); store.set('terms', terms);
 }
 function load(){
   const terms = store.get('terms', DEFAULT_TERMS);
   TERM_KEYS.forEach(k => $(k).value = terms[k] ?? DEFAULT_TERMS[k]);
-  const d = store.get('draft', null);
+  const d = store.get('draft2', null);
   if(d){
     FORM_KEYS.forEach(k => { if(d[k] != null) $(k).value = d[k]; });
     $(d.vat === 'in' ? 'vatIn' : 'vatEx').checked = true;
     (d.items && d.items.length ? d.items : [{}]).forEach(addItem);
   } else {
     $('date').value = today(); $('qno').value = nextNo(today());
-    addItem({ name: '대형건조기', spec: '업소용', unit: '대', qty: '1', memo: '설치 별도' });
-    addItem({ name: '중성세제', spec: '4L', unit: '통', qty: '10' });
+    addItem();
   }
 }
 function newQuote(){
