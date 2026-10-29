@@ -70,6 +70,12 @@
   .sendbox{background:#fff;width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:18px max(16px,env(safe-area-inset-left)) calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px}
   .sendbox b{color:var(--navy);font-size:15px;margin-bottom:4px}
   .sendbox .btn{padding:14px}
+  .sendbox{max-height:90vh;overflow-y:auto}
+  .mailrow{display:grid;grid-template-columns:62px 1fr auto;gap:8px;align-items:center;font-size:13px;border-bottom:1px solid var(--line);padding:6px 0}
+  .mailrow span{color:var(--sub);font-weight:700}
+  .mailrow em{font-style:normal;color:var(--ink);word-break:break-all;min-width:0}
+  .mailrow em.body{white-space:pre-line;font-size:12px;max-height:72px;overflow:hidden;color:var(--sub)}
+  .mailrow .btn{padding:6px 10px}
   .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 18px;border-radius:24px;font-weight:700;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
   .toast.on{opacity:1}
 
@@ -302,6 +308,20 @@
   </div>
 </div>
 
+<div class="sheetbg" id="mailSheet" hidden onclick="if(event.target===this)this.hidden=true">
+  <div class="sendbox">
+    <b>이메일로 보내기</b>
+    <div class="mailrow"><span>받는 사람</span><em id="mTo"></em><button class="btn ghost sm" onclick="copyText($('mTo').textContent,'받는 주소')">복사</button></div>
+    <div class="mailrow"><span>제목</span><em id="mSubj"></em><button class="btn ghost sm" onclick="copyText($('mSubj').textContent,'제목')">복사</button></div>
+    <div class="mailrow"><span>내용</span><em id="mBody" class="body"></em><button class="btn ghost sm" onclick="copyText($('mBody').textContent,'내용')">복사</button></div>
+    <button class="btn green" onclick="mailShare()">PDF 첨부해서 메일 앱 열기</button>
+    <p class="hint" style="margin:0">네이버 메일을 고르면 PDF와 내용이 들어가요. 받는 주소는 미리 복사해 두니 받는 사람 칸을 길게 눌러 붙여넣기 하세요.</p>
+    <button class="btn ghost" onclick="mailTo()">주소·제목·내용 채워서 메일 앱 열기</button>
+    <p class="hint" style="margin:0">이 방법은 받는 사람과 내용이 다 채워지고, PDF는 휴대폰 '다운로드' 폴더에 저장돼요. 메일에서 첨부 → 내 파일 → 다운로드에서 골라 주세요.</p>
+    <button class="btn ghost" onclick="$('mailSheet').hidden=true">닫기</button>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -524,9 +544,9 @@ function download(file){
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
 const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
-async function shareFile(file, text){
+async function shareFile(file, text, title){
   if(isMobile() && navigator.canShare && navigator.canShare({ files: [file] })){
-    try{ await navigator.share({ files: [file], title: file.name, text }); return 'shared'; }
+    try{ await navigator.share({ files: [file], title: title || file.name, text }); return 'shared'; }
     catch(e){ if(e.name === 'AbortError') return 'cancel'; }
   }
   return 'none';
@@ -545,16 +565,43 @@ function saveImage(){ run(async () => {
   if(await shareFile(f) === 'none'){ download(f); toast('이미지를 저장했어요'); }
 }); }
 function openSend(){ $('sendSheet').hidden = false; }
+let mailFile = null;
+const mailSubj = () => `[그린벨리] 견적서 - ${$('client').value.trim() || '귀사'} (${$('qno').value})`;
+function mailBody(){
+  const c = compute(), who = $('client').value.trim();
+  return `안녕하세요${who ? ', ' + who + ' ' + ($('person').value.trim() || '담당자') + '님' : ''}.\n그린벨리입니다.\n\n요청하신 견적서를 첨부하여 보내드립니다.\n\n· 견적번호: ${$('qno').value}\n· 합계금액: ${fmt(c.grand)}원 (부가세 포함)\n\n검토 후 궁금하신 점은 편하게 연락 주세요.\n감사합니다.\n\n그린벨리 이동연\n010-4461-2300 / ldy5342@naver.com`;
+}
 function sendEmail(){ run(async () => {
   $('sendSheet').hidden = true;
-  const f = await makePdf(), body = summary();
-  const r = await shareFile(f, body);
-  if(r !== 'none') return;
-  download(f);
-  const subj = `[그린벨리] 견적서 ${$('qno').value}`;
-  location.href = `mailto:${encodeURIComponent($('email').value.trim())}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body + '\n\n(첨부: ' + f.name + ')')}`;
-  toast('PDF를 저장했어요. 메일에 첨부해 주세요');
+  mailFile = await makePdf();
+  $('mTo').textContent = $('email').value.trim() || '(받는 사람 이메일을 입력해 주세요)';
+  $('mSubj').textContent = mailSubj();
+  $('mBody').textContent = mailBody();
+  $('mailSheet').hidden = false;
+  toast('PDF를 만들었어요');
 }); }
+async function copyText(t, label){
+  try{ await navigator.clipboard.writeText(t); toast(label + '를 복사했어요'); }
+  catch(e){
+    const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast(label + '를 복사했어요'); }catch(_){ toast('복사가 안 돼요. 길게 눌러 복사해 주세요'); }
+    ta.remove();
+  }
+}
+async function mailShare(){
+  const to = $('email').value.trim();
+  if(to){ try{ await navigator.clipboard.writeText(to); }catch(e){} }
+  const r = await shareFile(mailFile, mailBody(), mailSubj());
+  if(r === 'none'){ download(mailFile); toast('PDF를 저장했어요. 메일에 첨부해 주세요'); }
+  else if(to) toast('받는 주소를 복사했어요. 받는 사람 칸에 붙여넣기 하세요');
+}
+function mailTo(){
+  download(mailFile);
+  setTimeout(() => {
+    location.href = `mailto:${$('email').value.trim()}?subject=${encodeURIComponent(mailSubj())}&body=${encodeURIComponent(mailBody())}`;
+  }, 400);
+  toast('PDF를 다운로드 폴더에 저장했어요');
+}
 function sendSms(){ run(async () => {
   $('sendSheet').hidden = true;
   const f = await makePdf(), body = summary();
