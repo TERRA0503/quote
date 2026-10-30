@@ -314,7 +314,7 @@
     <div class="mailrow"><span>제목</span><em id="mSubj"></em><button class="btn ghost sm" onclick="copyText($('mSubj').textContent,'제목')">복사</button></div>
     <div class="mailrow"><span>내용</span><em id="mBody" class="body"></em><button class="btn ghost sm" onclick="copyText($('mBody').textContent,'내용')">복사</button></div>
     <button class="btn green" onclick="mailShare()">메일 보내기 (PDF 첨부)</button>
-    <p class="hint" style="margin:0">네이버 메일을 고르면 PDF 첨부, 제목, 내용이 함께 들어가요. 받는 주소는 자동으로 복사되니 받는 사람 칸을 길게 눌러 붙여넣기 하세요.</p>
+    <p class="hint" style="margin:0">누르면 견적서 PDF가 휴대폰 '다운로드'에 저장되고, 네이버 메일이 받는 사람·제목·내용이 채워진 채로 열려요. 메일에서 첨부(클립) → 내 파일 → 다운로드에서 방금 저장된 견적서 PDF만 골라 주세요.</p>
     <button class="btn ghost" onclick="$('mailSheet').hidden=true">닫기</button>
   </div>
 </div>
@@ -601,19 +601,13 @@ async function copyText(t, label){
     ta.remove();
   }
 }
-async function mailShare(){
-  const to = $('email').value.trim();
-  if(to){ try{ await navigator.clipboard.writeText(to); }catch(e){} }
-  const r = await shareFile(mailFile, mailBody(), mailSubj());
-  if(r === 'none'){ mailTo(); return; }
-  else if(to) toast('받는 주소를 복사했어요. 받는 사람 칸에 붙여넣기 하세요');
-}
+function mailShare(){ mailTo(); }
 function mailTo(){
   download(mailFile);
   setTimeout(() => {
     location.href = `mailto:${$('email').value.trim()}?subject=${encodeURIComponent(mailSubj())}&body=${encodeURIComponent(mailBody())}`;
   }, 400);
-  toast('PDF를 다운로드 폴더에 저장했어요');
+  toast('PDF를 다운로드에 저장했어요. 메일에서 첨부해 주세요');
 }
 function sendSms(){ run(async () => {
   $('sendSheet').hidden = true;
