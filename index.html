@@ -313,8 +313,10 @@
     <div class="mailrow"><span>받는 사람</span><em id="mTo"></em><button class="btn ghost sm" onclick="copyText($('mTo').textContent,'받는 주소')">복사</button></div>
     <div class="mailrow"><span>제목</span><em id="mSubj"></em><button class="btn ghost sm" onclick="copyText($('mSubj').textContent,'제목')">복사</button></div>
     <div class="mailrow"><span>내용</span><em id="mBody" class="body"></em><button class="btn ghost sm" onclick="copyText($('mBody').textContent,'내용')">복사</button></div>
-    <button class="btn green" onclick="mailShare()">메일 보내기 (PDF 첨부)</button>
-    <p class="hint" style="margin:0">누르면 견적서 PDF가 휴대폰 '다운로드'에 저장되고, 네이버 메일이 받는 사람·제목·내용이 채워진 채로 열려요. 메일에서 첨부(클립) → 내 파일 → 다운로드에서 방금 저장된 견적서 PDF만 골라 주세요.</p>
+    <button class="btn green" onclick="mailShare()">Outlook·Gmail로 보내기 (PDF·제목·내용 함께)</button>
+    <p class="hint" style="margin:0">앱 목록에서 Outlook이나 Gmail을 고르세요. 받는 주소는 자동으로 복사되니 받는 사람 칸에 붙여넣기만 하면 돼요.</p>
+    <button class="btn ghost" onclick="mailTo()">네이버 메일 앱으로 보내기 (PDF는 직접 첨부)</button>
+    <p class="hint" style="margin:0">받는 사람·제목·내용이 채워진 채로 열리고, PDF는 다운로드에 저장돼요. 첨부 → 내 파일 → 다운로드에서 골라 주세요.</p>
     <button class="btn ghost" onclick="$('mailSheet').hidden=true">닫기</button>
   </div>
 </div>
@@ -601,7 +603,13 @@ async function copyText(t, label){
     ta.remove();
   }
 }
-function mailShare(){ mailTo(); }
+async function mailShare(){
+  const to = $('email').value.trim();
+  if(to){ try{ await navigator.clipboard.writeText(to); }catch(e){} }
+  const r = await shareFile(mailFile, mailBody(), mailSubj());
+  if(r === 'none'){ mailTo(); return; }
+  if(r === 'shared' && to) toast('받는 주소를 복사했어요. 받는 사람 칸에 붙여넣기 하세요');
+}
 function mailTo(){
   download(mailFile);
   setTimeout(() => {
