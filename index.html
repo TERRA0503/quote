@@ -313,10 +313,8 @@
     <div class="mailrow"><span>받는 사람</span><em id="mTo"></em><button class="btn ghost sm" onclick="copyText($('mTo').textContent,'받는 주소')">복사</button></div>
     <div class="mailrow"><span>제목</span><em id="mSubj"></em><button class="btn ghost sm" onclick="copyText($('mSubj').textContent,'제목')">복사</button></div>
     <div class="mailrow"><span>내용</span><em id="mBody" class="body"></em><button class="btn ghost sm" onclick="copyText($('mBody').textContent,'내용')">복사</button></div>
-    <button class="btn green" onclick="mailShare()">PDF 첨부해서 보내기</button>
-    <p class="hint" style="margin:0">네이버 메일을 고르면 PDF가 첨부돼요. 받는 주소는 미리 복사해 두니 받는 사람 칸을 길게 눌러 붙여넣기 하세요. 내용은 위 '내용' 복사를 눌러 붙여넣으면 돼요.</p>
-    <button class="btn ghost" onclick="mailTo()">주소·제목·내용만 채워서 열기 (PDF는 직접 첨부)</button>
-    <p class="hint" style="margin:0">이 방법은 받는 사람과 내용이 다 채워지고, PDF는 휴대폰 '다운로드' 폴더에 저장돼요. 메일에서 첨부 → 내 파일 → 다운로드에서 골라 주세요.</p>
+    <button class="btn green" onclick="mailShare()">메일 보내기 (PDF 첨부)</button>
+    <p class="hint" style="margin:0">네이버 메일을 고르면 PDF 첨부, 제목, 내용이 함께 들어가요. 받는 주소는 자동으로 복사되니 받는 사람 칸을 길게 눌러 붙여넣기 하세요.</p>
     <button class="btn ghost" onclick="$('mailSheet').hidden=true">닫기</button>
   </div>
 </div>
@@ -606,9 +604,8 @@ async function copyText(t, label){
 async function mailShare(){
   const to = $('email').value.trim();
   if(to){ try{ await navigator.clipboard.writeText(to); }catch(e){} }
-  // 메일 앱이 첨부를 빼먹지 않도록 PDF 파일만 넘긴다
-  const r = await shareFile(mailFile);
-  if(r === 'none'){ download(mailFile); toast('PDF를 저장했어요. 메일에 첨부해 주세요'); }
+  const r = await shareFile(mailFile, mailBody(), mailSubj());
+  if(r === 'none'){ mailTo(); return; }
   else if(to) toast('받는 주소를 복사했어요. 받는 사람 칸에 붙여넣기 하세요');
 }
 function mailTo(){
