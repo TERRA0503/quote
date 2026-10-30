@@ -473,6 +473,32 @@ function fit(){
 }
 window.addEventListener('resize', fit);
 
+/* 네이버 앱 등 일부 앱 브라우저는 자체 '글자 크기' 설정으로 글씨를 강제로 키운다(CSS로 못 막음).
+   실제 글씨 폭을 재서 확대된 비율만큼 견적서 글씨를 되돌린다. */
+function measureZoom(probe){
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = `${probe.style.fontWeight || 400} 100px ${getComputedStyle(probe).fontFamily}`;
+  return probe.getBoundingClientRect().width / ctx.measureText(probe.textContent).width;
+}
+function fixTextZoom(){
+  const sheet = $('sheet'), sc = $('scaler'), prev = sc.style.transform;
+  sc.style.transform = 'none';
+  const probe = document.createElement('span');
+  probe.textContent = '견적서가나다 0123456789';
+  probe.style.cssText = 'position:absolute;left:-9999px;top:0;font-size:100px;white-space:nowrap;font-weight:400';
+  sheet.appendChild(probe);
+  const els = [sheet, ...sheet.querySelectorAll('*:not(img)')].filter(el => el !== probe);
+  for(let i = 0; i < 3; i++){
+    const r = measureZoom(probe);
+    if(!isFinite(r) || Math.abs(r - 1) < 0.02) break;
+    els.forEach(el => { el.style.fontSize = (parseFloat(el.style.fontSize || getComputedStyle(el).fontSize) / r) + 'px'; });
+    probe.style.fontSize = (parseFloat(probe.style.fontSize) / r) + 'px';
+  }
+  probe.remove();
+  sc.style.transform = prev;
+  fit();
+}
+
 /* 임시 저장 */
 const FORM_KEYS = ['client', 'person', 'phone', 'email', 'date', 'qno', ...TERM_KEYS];
 function saveDraft(){
@@ -641,7 +667,7 @@ function sendSms(){ run(async () => {
 let tt; function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 2200); }
 
 fillDatalist(); load(); render();
-document.fonts && document.fonts.ready.then(fit);
+(document.fonts ? document.fonts.ready : Promise.resolve()).then(fixTextZoom);
 </script>
 </body>
 </html>
