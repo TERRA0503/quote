@@ -13,6 +13,9 @@
     --green:#7cbf2f; --ink:#222; --sub:#5a6473; --line:#d5deea; --bg:#e9edf3;
   }
   *{box-sizing:border-box;margin:0;padding:0}
+  /* 휴대폰 '글자 크기' 설정이나 브라우저 자동 확대가 견적서 글씨를 바꾸지 않도록 고정 */
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  .sheet,.sheet *{-webkit-text-size-adjust:none!important;text-size-adjust:none!important}
   body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif;color:var(--ink);background:var(--bg);word-break:keep-all;font-size:14px}
   button,input,select,textarea{font:inherit;color:inherit}
 
@@ -91,7 +94,7 @@
   }
 
   /* ── 견적서 시트 (A4) ── */
-  .sheet{width:210mm;height:297mm;background:#fff;padding:14mm 13mm 12mm;box-shadow:0 4px 24px rgba(29,52,97,.12);position:relative;overflow:hidden;font-size:12.5px}
+  .sheet{max-height:none;width:210mm;height:297mm;background:#fff;padding:14mm 13mm 12mm;box-shadow:0 4px 24px rgba(29,52,97,.12);position:relative;overflow:hidden;font-size:12.5px}
   .sheet::before{content:"";position:absolute;left:0;top:0;right:0;height:6px;background:linear-gradient(90deg,var(--navy) 0 70%,var(--blue) 70% 90%,var(--green) 90%)}
   .s-head{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:12px;border-bottom:2px solid var(--navy)}
   .s-head .logo{height:52px;display:block}
