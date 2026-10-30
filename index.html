@@ -185,7 +185,7 @@
 
     <section class="card">
       <h2>판매 품목</h2>
-      <p class="hint" id="vatHint" style="margin-top:0">단가는 부가세 포함 금액으로 적어 주세요. 공급가액과 부가세는 자동으로 나눠서 표시돼요.</p>
+      <p class="hint" id="vatHint" style="margin-top:0">단가는 부가세 빼고 적어 주세요. 부가세 10%는 자동으로 더해서 계산돼요.</p>
       <div class="items-list" id="itemsForm"></div>
       <button class="add" onclick="addItem()">+ 품목 추가</button>
       <div class="sumbox">
@@ -390,7 +390,7 @@ function fillDatalist(){
   dl.innerHTML = Object.keys(p).map(n => `<option value="${n.replace(/"/g, '&quot;')}">`).join('');
 }
 
-function vatMode(){ return 'in'; }
+function vatMode(){ return 'ex'; }
 
 /* 한글 금액 */
 function toKorean(n){
@@ -416,7 +416,7 @@ function compute(){
   });
   let sub, vat, grand;
   if(inc){ grand = rows.reduce((a, r) => a + r.line, 0); sub = rows.reduce((a, r) => a + r.supply, 0); vat = grand - sub; }
-  else { sub = rows.reduce((a, r) => a + r.line, 0); vat = Math.floor(sub * 0.1); grand = sub + vat; }
+  else { sub = rows.reduce((a, r) => a + r.supply, 0); vat = rows.reduce((a, r) => a + r.tax, 0); grand = sub + vat; }
   return { inc, rows, sub, vat, grand };
 }
 
@@ -426,7 +426,7 @@ function render(){
     el.querySelector('.no').textContent = i + 1;
     el.querySelector('.ph').textContent = c.inc ? '단가 (VAT 포함)' : '단가 (VAT 별도)';
     const r = c.rows[i];
-    el.querySelector('.amt').textContent = r && r.line ? `금액 ${fmt(r.line)}원` : '';
+    el.querySelector('.amt').textContent = r && r.line ? `공급가액 ${fmt(r.supply)}원 + 세액 ${fmt(r.tax)}원 = ${fmt(r.supply + r.tax)}원` : '';
   });
   $('fSub').textContent = fmt(c.sub) + '원'; $('fVat').textContent = fmt(c.vat) + '원'; $('fGrand').textContent = fmt(c.grand) + '원';
 
