@@ -322,8 +322,9 @@
     <div class="mailrow"><span>받는 사람</span><em id="mTo"></em><button class="btn ghost sm" onclick="copyText($('mTo').textContent,'받는 주소')">복사</button></div>
     <div class="mailrow"><span>제목</span><em id="mSubj"></em><button class="btn ghost sm" onclick="copyText($('mSubj').textContent,'제목')">복사</button></div>
     <div class="mailrow"><span>내용</span><em id="mBody" class="body"></em><button class="btn ghost sm" onclick="copyText($('mBody').textContent,'내용')">복사</button></div>
-    <button class="btn green" onclick="mailTo()">Gmail로 보내기</button>
-    <p class="hint" style="margin:0">Gmail이 받는 사람·제목·내용이 채워진 채로 열려요. 견적서 PDF는 휴대폰 '다운로드'에 저장되니, Gmail에서 첨부(클립) → 파일 첨부 → 다운로드에서 골라 주세요.</p>
+    <button class="btn navy" onclick="download(mailFile);toast('PDF를 다운로드에 저장했어요')">① 견적서 PDF 저장</button>
+    <button class="btn green" onclick="mailTo()">② Gmail로 보내기</button>
+    <p class="hint" style="margin:0">①로 PDF를 먼저 저장한 다음 ②를 누르세요. Gmail이 받는 사람·제목·내용이 채워진 채로 열리면 첨부(클립) → 파일 첨부 → 다운로드에서 방금 저장한 PDF를 고르면 돼요.</p>
     <button class="btn ghost" onclick="$('mailSheet').hidden=true">닫기</button>
   </div>
 </div>
@@ -645,15 +646,11 @@ async function mailShare(){
   if(r === 'shared' && to) toast('받는 주소를 복사했어요. 받는 사람 칸에 붙여넣기 하세요');
 }
 function mailTo(){
-  download(mailFile);
-  setTimeout(() => {
-    const q = `${encodeURIComponent($('email').value.trim())}?subject=${encodeURIComponent(mailSubj())}&body=${encodeURIComponent(mailBody())}`;
-    // 안드로이드는 앱 선택 창 없이 Gmail 앱으로 바로 연결 (Gmail이 없으면 일반 메일 열기)
-    location.href = /Android/i.test(navigator.userAgent)
-      ? `intent:${q}#Intent;scheme=mailto;package=com.google.android.gm;S.browser_fallback_url=${encodeURIComponent('mailto:' + q)};end`
-      : `mailto:${q}`;
-  }, 400);
-  toast('PDF를 다운로드에 저장했어요. 메일에서 첨부해 주세요');
+  const q = `${encodeURIComponent($('email').value.trim())}?subject=${encodeURIComponent(mailSubj())}&body=${encodeURIComponent(mailBody())}`;
+  // 안드로이드는 앱 선택 창 없이 Gmail 앱으로 바로 연결 (Gmail이 없으면 일반 메일 열기)
+  location.href = /Android/i.test(navigator.userAgent)
+    ? `intent:${q}#Intent;scheme=mailto;package=com.google.android.gm;S.browser_fallback_url=${encodeURIComponent('mailto:' + q)};end`
+    : `mailto:${q}`;
 }
 function sendSms(){ run(async () => {
   $('sendSheet').hidden = true;
