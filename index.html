@@ -647,7 +647,11 @@ async function mailShare(){
 function mailTo(){
   download(mailFile);
   setTimeout(() => {
-    location.href = `mailto:${$('email').value.trim()}?subject=${encodeURIComponent(mailSubj())}&body=${encodeURIComponent(mailBody())}`;
+    const q = `${encodeURIComponent($('email').value.trim())}?subject=${encodeURIComponent(mailSubj())}&body=${encodeURIComponent(mailBody())}`;
+    // 안드로이드는 앱 선택 창 없이 Gmail 앱으로 바로 연결 (Gmail이 없으면 일반 메일 열기)
+    location.href = /Android/i.test(navigator.userAgent)
+      ? `intent:${q}#Intent;scheme=mailto;package=com.google.android.gm;S.browser_fallback_url=${encodeURIComponent('mailto:' + q)};end`
+      : `mailto:${q}`;
   }, 400);
   toast('PDF를 다운로드에 저장했어요. 메일에서 첨부해 주세요');
 }
