@@ -322,9 +322,11 @@
     <div class="mailrow"><span>받는 사람</span><em id="mTo"></em><button class="btn ghost sm" onclick="copyText($('mTo').textContent,'받는 주소')">복사</button></div>
     <div class="mailrow"><span>제목</span><em id="mSubj"></em><button class="btn ghost sm" onclick="copyText($('mSubj').textContent,'제목')">복사</button></div>
     <div class="mailrow"><span>내용</span><em id="mBody" class="body"></em><button class="btn ghost sm" onclick="copyText($('mBody').textContent,'내용')">복사</button></div>
-    <button class="btn navy" onclick="download(mailFile);toast('PDF를 다운로드에 저장했어요')">① 견적서 PDF 저장</button>
-    <button class="btn green" onclick="mailTo()">② Gmail로 보내기</button>
-    <p class="hint" style="margin:0">①로 PDF를 먼저 저장한 다음 ②를 누르세요. Gmail이 받는 사람·제목·내용이 채워진 채로 열리면 첨부(클립) → 파일 첨부 → 다운로드에서 방금 저장한 PDF를 고르면 돼요.</p>
+    <button class="btn green" onclick="mailShare()">PDF 첨부해서 보내기 (처음 방식)</button>
+    <p class="hint" style="margin:0">앱 목록에서 Gmail을 고르면 PDF와 내용이 함께 들어가요. 받는 주소는 자동으로 복사되니 받는 사람 칸에 붙여넣기 하세요.</p>
+    <p class="hint" style="margin:6px 0 0;font-weight:700">PDF가 안 붙으면 아래 두 단계로 보내 주세요.</p>
+    <button class="btn ghost" onclick="download(mailFile);toast('PDF를 다운로드에 저장했어요')">① 견적서 PDF 저장</button>
+    <button class="btn ghost" onclick="mailTo()">② Gmail 열기 (주소·제목·내용 채움)</button>
     <button class="btn ghost" onclick="$('mailSheet').hidden=true">닫기</button>
   </div>
 </div>
@@ -641,7 +643,7 @@ async function copyText(t, label){
 async function mailShare(){
   const to = $('email').value.trim();
   if(to){ try{ await navigator.clipboard.writeText(to); }catch(e){} }
-  const r = await shareFile(mailFile, mailBody(), mailSubj());
+  const r = await shareFile(mailFile, mailBody());
   if(r === 'none'){ mailTo(); return; }
   if(r === 'shared' && to) toast('받는 주소를 복사했어요. 받는 사람 칸에 붙여넣기 하세요');
 }
