@@ -322,6 +322,12 @@
     <div class="mailrow"><span>받는 사람</span><em id="mTo"></em><button class="btn ghost sm" onclick="copyText($('mTo').textContent,'받는 주소')">복사</button></div>
     <div class="mailrow"><span>제목</span><em id="mSubj"></em><button class="btn ghost sm" onclick="copyText($('mSubj').textContent,'제목')">복사</button></div>
     <div class="mailrow"><span>내용</span><em id="mBody" class="body"></em><button class="btn ghost sm" onclick="copyText($('mBody').textContent,'내용')">복사</button></div>
+    <div id="directBox" hidden>
+      <label class="f" id="pinRow">발송 비밀번호 (처음 한 번만)<input id="sendPin" type="password" autocomplete="off" placeholder="구글 설정 때 정한 비밀번호"></label>
+      <button class="btn green" style="width:100%;margin-top:8px;padding:16px" onclick="sendDirect()">메일 보내기 (받는 사람·제목·내용·PDF 모두)</button>
+      <p class="hint" style="margin:6px 0 4px">버튼 한 번이면 바로 발송돼요. 받은 분이 답장하면 네이버 메일로 오고, 보낸 메일 사본도 네이버 메일로 가요.</p>
+      <p class="hint" style="margin:0;font-weight:700">다른 방법으로 보내기</p>
+    </div>
     <button class="btn navy" onclick="download(mailFile);toast('PDF를 다운로드에 저장했어요')">① 견적서 PDF 저장</button>
     <button class="btn green" onclick="mailTo('com.nhn.android.mail')">② 네이버 메일로 보내기</button>
     <p class="hint" style="margin:0">①에서 다운로드를 마친 뒤 ②를 누르면 네이버 메일이 받는 사람·제목·내용이 채워진 채로 열려요. 첨부(클립) → 파일 → 다운로드에서 방금 저장한 PDF를 고르면 끝이에요.</p>
@@ -625,7 +631,28 @@ function mailBody(){
   const c = compute(), who = $('client').value.trim();
   return `안녕하세요${who ? ', ' + who + ' ' + ($('person').value.trim() || '담당자') + '님' : ''}.\n그린벨리입니다.\n\n요청하신 견적서를 첨부하여 보내드립니다.\n\n· 합계금액: ${fmt(c.grand)}원 (부가세 포함)\n\n검토 후 궁금하신 점은 편하게 연락 주세요.\n감사합니다.\n\n그린벨리 이동연\n010-4461-2300 / ldy5342@naver.com`;
 }
+/* 자동 발송: 구글 Apps Script 웹 앱 주소 */
+const SEND_URL = '';
+async function sendDirect(){
+  const to = $('email').value.trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)){ toast('받는 사람 이메일을 먼저 입력해 주세요'); return; }
+  const pin = $('sendPin').value.trim() || store.get('pin', '');
+  if(!pin){ toast('발송 비밀번호를 입력해 주세요'); return; }
+  toast('메일을 보내는 중이에요…');
+  try{
+    const pdf = await new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(fr.result.split(',')[1]); fr.onerror = no; fr.readAsDataURL(mailFile); });
+    const res = await fetch(SEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ key: pin, to, subject: mailSubj(), body: mailBody(), filename: mailFile.name, pdf }) });
+    const out = await res.json();
+    if(out.ok){ store.set('pin', pin); $('mailSheet').hidden = true; toast(to + '로 보냈어요'); }
+    else if(out.error === 'key'){ store.set('pin', ''); $('pinRow').hidden = false; toast('발송 비밀번호가 틀렸어요'); }
+    else toast('발송에 실패했어요: ' + (out.error || '알 수 없는 오류'));
+  }catch(e){ toast('발송에 실패했어요. 인터넷 연결을 확인해 주세요'); }
+}
+
 function sendEmail(){ run(async () => {
+  $('directBox').hidden = !SEND_URL;
+  $('pinRow').hidden = !!store.get('pin', '');
   $('sendSheet').hidden = true;
   mailFile = await makePdf();
   $('mTo').textContent = $('email').value.trim() || '(받는 사람 이메일을 입력해 주세요)';
