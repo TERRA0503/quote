@@ -632,7 +632,7 @@ function mailBody(){
   return `안녕하세요${who ? ', ' + who + ' ' + ($('person').value.trim() || '담당자') + '님' : ''}.\n그린벨리입니다.\n\n요청하신 견적서를 첨부하여 보내드립니다.\n\n· 합계금액: ${fmt(c.grand)}원 (부가세 포함)\n\n검토 후 궁금하신 점은 편하게 연락 주세요.\n감사합니다.\n\n그린벨리 이동연\n010-4461-2300 / ldy5342@naver.com`;
 }
 /* 자동 발송: 구글 Apps Script 웹 앱 주소 */
-const SEND_URL = '';
+const SEND_URL = 'https://script.google.com/macros/s/AKfycbyXI3ooBf912O0St9Z2ZKS2dSHM1X8LLzv3jAeFTXymWXsjlNXuuFdLkBdlbJ7OnPPh/exec';
 async function sendDirect(){
   const to = $('email').value.trim();
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)){ toast('받는 사람 이메일을 먼저 입력해 주세요'); return; }
