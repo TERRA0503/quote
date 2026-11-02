@@ -318,15 +318,17 @@
 
 <div class="sheetbg" id="mailSheet" hidden onclick="if(event.target===this)this.hidden=true">
   <div class="sendbox">
-    <b>Gmail로 보내기</b>
+    <b>이메일로 보내기</b>
     <div class="mailrow"><span>받는 사람</span><em id="mTo"></em><button class="btn ghost sm" onclick="copyText($('mTo').textContent,'받는 주소')">복사</button></div>
     <div class="mailrow"><span>제목</span><em id="mSubj"></em><button class="btn ghost sm" onclick="copyText($('mSubj').textContent,'제목')">복사</button></div>
     <div class="mailrow"><span>내용</span><em id="mBody" class="body"></em><button class="btn ghost sm" onclick="copyText($('mBody').textContent,'내용')">복사</button></div>
-    <button class="btn green" onclick="mailShare()">PDF 첨부해서 보내기 (처음 방식)</button>
-    <p class="hint" style="margin:0">앱 목록에서 Gmail을 고르면 PDF와 내용이 함께 들어가요. 받는 주소는 자동으로 복사되니 받는 사람 칸에 붙여넣기 하세요.</p>
-    <p class="hint" style="margin:6px 0 0;font-weight:700">PDF가 안 붙으면 아래 두 단계로 보내 주세요.</p>
-    <button class="btn ghost" onclick="download(mailFile);toast('PDF를 다운로드에 저장했어요')">① 견적서 PDF 저장</button>
-    <button class="btn ghost" onclick="mailTo()">② Gmail 열기 (주소·제목·내용 채움)</button>
+    <button class="btn navy" onclick="download(mailFile);toast('PDF를 다운로드에 저장했어요')">① 견적서 PDF 저장</button>
+    <button class="btn green" onclick="mailTo('com.nhn.android.mail')">② 네이버 메일로 보내기</button>
+    <p class="hint" style="margin:0">①에서 다운로드를 마친 뒤 ②를 누르면 네이버 메일이 받는 사람·제목·내용이 채워진 채로 열려요. 첨부(클립) → 파일 → 다운로드에서 방금 저장한 PDF를 고르면 끝이에요.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn ghost" onclick="mailTo('com.google.android.gm')">Gmail로 열기</button>
+      <button class="btn ghost" onclick="mailShare()">공유로 PDF 보내기</button>
+    </div>
     <button class="btn ghost" onclick="$('mailSheet').hidden=true">닫기</button>
   </div>
 </div>
@@ -647,11 +649,11 @@ async function mailShare(){
   if(r === 'none'){ mailTo(); return; }
   if(r === 'shared' && to) toast('받는 주소를 복사했어요. 받는 사람 칸에 붙여넣기 하세요');
 }
-function mailTo(){
+function mailTo(pkg = 'com.nhn.android.mail'){
   const q = `${encodeURIComponent($('email').value.trim())}?subject=${encodeURIComponent(mailSubj())}&body=${encodeURIComponent(mailBody())}`;
-  // 안드로이드는 앱 선택 창 없이 Gmail 앱으로 바로 연결 (Gmail이 없으면 일반 메일 열기)
+  // 안드로이드는 앱 선택 창 없이 지정한 메일 앱으로 바로 연결 (앱이 없으면 일반 메일 열기)
   location.href = /Android/i.test(navigator.userAgent)
-    ? `intent:${q}#Intent;scheme=mailto;package=com.google.android.gm;S.browser_fallback_url=${encodeURIComponent('mailto:' + q)};end`
+    ? `intent:${q}#Intent;scheme=mailto;package=${pkg};S.browser_fallback_url=${encodeURIComponent('mailto:' + q)};end`
     : `mailto:${q}`;
 }
 function sendSms(){ run(async () => {
