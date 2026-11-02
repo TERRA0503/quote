@@ -50,6 +50,7 @@
   .f textarea{resize:vertical;min-height:84px;line-height:1.5;font-size:14px}
   .f input:focus,.f select:focus,.f textarea:focus{outline:2px solid var(--sky);border-color:var(--blue)}
   .full{grid-column:1/-1}
+  [hidden]{display:none!important}
   .f input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;height:46px;line-height:24px;text-align:left}
   .f input[type=date]::-webkit-date-and-time-value{text-align:left}
 
@@ -80,7 +81,7 @@
   .sendbox b{color:var(--navy);font-size:15px;margin-bottom:4px}
   .sendbox .btn{padding:14px}
   .sendbox{max-height:90vh;overflow-y:auto}
-  .mailrow{display:grid;grid-template-columns:62px 1fr auto;gap:8px;align-items:center;font-size:13px;border-bottom:1px solid var(--line);padding:6px 0}
+  .mailrow{display:grid;grid-template-columns:62px 1fr;gap:8px;align-items:center;font-size:13px;border-bottom:1px solid var(--line);padding:6px 0}
   .mailrow span{color:var(--sub);font-weight:700}
   .mailrow em{font-style:normal;color:var(--ink);word-break:break-all;min-width:0}
   .mailrow em.body{white-space:pre-line;font-size:12px;max-height:72px;overflow:hidden;color:var(--sub)}
@@ -319,21 +320,13 @@
 <div class="sheetbg" id="mailSheet" hidden onclick="if(event.target===this)this.hidden=true">
   <div class="sendbox">
     <b>이메일로 보내기</b>
-    <div class="mailrow"><span>받는 사람</span><em id="mTo"></em><button class="btn ghost sm" onclick="copyText($('mTo').textContent,'받는 주소')">복사</button></div>
-    <div class="mailrow"><span>제목</span><em id="mSubj"></em><button class="btn ghost sm" onclick="copyText($('mSubj').textContent,'제목')">복사</button></div>
-    <div class="mailrow"><span>내용</span><em id="mBody" class="body"></em><button class="btn ghost sm" onclick="copyText($('mBody').textContent,'내용')">복사</button></div>
-    <div id="directBox" hidden>
+    <div class="mailrow"><span>받는 사람</span><em id="mTo"></em></div>
+    <div class="mailrow"><span>제목</span><em id="mSubj"></em></div>
+    <div class="mailrow"><span>내용</span><em id="mBody" class="body"></em></div>
+    <div id="directBox">
       <label class="f" id="pinRow">발송 비밀번호 (처음 한 번만)<input id="sendPin" type="password" autocomplete="off" placeholder="구글 설정 때 정한 비밀번호"></label>
-      <button class="btn green" style="width:100%;margin-top:8px;padding:16px" onclick="sendDirect()">메일 보내기 (받는 사람·제목·내용·PDF 모두)</button>
-      <p class="hint" style="margin:6px 0 4px">버튼 한 번이면 바로 발송돼요. 받은 분이 답장하면 네이버 메일로 오고, 보낸 메일 사본도 네이버 메일로 가요.</p>
-      <p class="hint" style="margin:0;font-weight:700">다른 방법으로 보내기</p>
-    </div>
-    <button class="btn navy" onclick="download(mailFile);toast('PDF를 다운로드에 저장했어요')">① 견적서 PDF 저장</button>
-    <button class="btn green" onclick="mailTo('com.nhn.android.mail')">② 네이버 메일로 보내기</button>
-    <p class="hint" style="margin:0">①에서 다운로드를 마친 뒤 ②를 누르면 네이버 메일이 받는 사람·제목·내용이 채워진 채로 열려요. 첨부(클립) → 파일 → 다운로드에서 방금 저장한 PDF를 고르면 끝이에요.</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <button class="btn ghost" onclick="mailTo('com.google.android.gm')">Gmail로 열기</button>
-      <button class="btn ghost" onclick="mailShare()">공유로 PDF 보내기</button>
+      <button class="btn green" style="width:100%;margin-top:8px;padding:16px" onclick="sendDirect()">메일 보내기</button>
+      <p class="hint" style="margin:6px 0 0">PDF가 첨부된 메일이 바로 발송돼요. 답장과 사본은 네이버 메일로 와요.</p>
     </div>
     <button class="btn ghost" onclick="$('mailSheet').hidden=true">닫기</button>
   </div>
@@ -651,7 +644,6 @@ async function sendDirect(){
 }
 
 function sendEmail(){ run(async () => {
-  $('directBox').hidden = !SEND_URL;
   $('pinRow').hidden = !!store.get('pin', '');
   $('sendSheet').hidden = true;
   mailFile = await makePdf();
