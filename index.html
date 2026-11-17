@@ -65,6 +65,12 @@
   .item .no{position:absolute;top:-9px;left:10px;background:var(--blue);color:#fff;font-size:11px;font-weight:800;border-radius:6px;padding:1px 7px}
   .item .del{position:absolute;top:6px;right:6px;border:0;background:none;color:#a7b0bd;font-size:18px;cursor:pointer;padding:2px 6px}
   .item .amt{grid-column:1/-1;text-align:right;font-size:13px;color:var(--navy);font-weight:700}
+  .item .specnote{grid-column:1/-1;font-size:12px;color:var(--sub);margin-top:-4px}
+  .item .specnote b{color:var(--green)}
+  .speclist{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;font-size:12.5px;color:var(--sub);align-items:center}
+  .speclist a{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:8px;padding:5px 9px;color:var(--navy);font-weight:700;text-decoration:none;background:#fff}
+  .filelist{font-size:13px;color:var(--ink);line-height:1.7;border-bottom:1px solid var(--line);padding-bottom:6px}
+  #smsText{min-height:150px;font-size:14px}
   .items-list{display:flex;flex-direction:column;gap:18px;padding-top:16px}
   .add{border:1px dashed var(--sky);background:#fbfdff;color:var(--blue);font-weight:700;padding:11px;border-radius:10px;cursor:pointer;width:100%;margin-top:12px}
   .sumbox{display:grid;grid-template-columns:1fr auto;gap:4px 10px;margin-top:12px;font-size:13px;color:var(--sub)}
@@ -226,7 +232,8 @@
         <button class="btn green" onclick="sendEmail()">이메일로 보내기</button>
         <button class="btn green" onclick="sendSms()">문자 · 카톡으로 보내기</button>
       </div>
-      <p class="hint">휴대폰에서는 PDF가 첨부된 채로 메일·문자·카카오톡 앱이 열려요. 컴퓨터에서는 PDF가 저장되고 받는 사람과 내용이 채워진 메일 창이 열리니, 저장된 PDF를 끌어다 첨부해 주세요.</p>
+      <div class="speclist" id="specList"></div>
+      <p class="hint">이메일과 문자·카톡으로 보낼 때 견적서 PDF와 기계 치수·사양 이미지가 각각 따로 첨부돼요. 사양 이미지는 품목의 모델명(예: SR-7517)이나 품명·용량(예: 중소형세탁기 17kg)을 보고 자동으로 골라져요.</p>
     </section>
   </div>
 
@@ -317,16 +324,28 @@
   </div>
 </div>
 
+<div class="sheetbg" id="smsSheet" hidden onclick="if(event.target===this)this.hidden=true">
+  <div class="sendbox">
+    <b>문자 · 카톡으로 보내기</b>
+    <div class="filelist" id="smsFiles"></div>
+    <label class="f">보낼 글 (고쳐도 돼요)<textarea id="smsText"></textarea></label>
+    <button class="btn green" style="padding:16px" onclick="smsGo()">보내기</button>
+    <p class="hint" style="margin:0">문자·카톡 앱을 고르면 파일과 글이 함께 들어가요. 앱에 따라 글이 빠지면, 글은 미리 복사돼 있으니 입력칸을 길게 눌러 <b>붙여넣기</b>만 하세요.</p>
+    <button class="btn ghost" onclick="$('smsSheet').hidden=true">닫기</button>
+  </div>
+</div>
+
 <div class="sheetbg" id="mailSheet" hidden onclick="if(event.target===this)this.hidden=true">
   <div class="sendbox">
     <b>이메일로 보내기</b>
     <div class="mailrow"><span>받는 사람</span><em id="mTo"></em></div>
     <div class="mailrow"><span>제목</span><em id="mSubj"></em></div>
     <div class="mailrow"><span>내용</span><em id="mBody" class="body"></em></div>
+    <div class="mailrow"><span>첨부</span><em id="mFiles"></em></div>
     <div id="directBox">
       <label class="f" id="pinRow">발송 비밀번호 (처음 한 번만)<input id="sendPin" type="password" autocomplete="off" placeholder="구글 설정 때 정한 비밀번호"></label>
       <button class="btn green" style="width:100%;margin-top:8px;padding:16px" onclick="sendDirect()">메일 보내기</button>
-      <p class="hint" style="margin:6px 0 0">PDF가 첨부된 메일이 바로 발송돼요. 답장과 사본은 네이버 메일로 와요.</p>
+      <p class="hint" style="margin:6px 0 0">견적서 PDF와 사양 이미지가 첨부된 메일이 바로 발송돼요. 답장과 사본은 네이버 메일로 와요.</p>
     </div>
     <button class="btn ghost" onclick="$('mailSheet').hidden=true">닫기</button>
   </div>
@@ -376,6 +395,8 @@ function addItem(d = {}){
     <label class="f">단위<input data-f="unit" placeholder="예) 대"></label>
     <label class="f">수량<input data-f="qty" inputmode="numeric" placeholder="예) 1"></label>
     <label class="f"><span class="ph">단가</span><input data-f="price" inputmode="numeric" placeholder="예) 2,850,000"></label>
+    <label class="f full">치수·사양 이미지<select data-f="specimg">${specOptions()}</select></label>
+    <div class="specnote"></div>
     <div class="amt"></div>`;
   for(const [k, v] of Object.entries(d)){ const i = el.querySelector(`[data-f="${k}"]`); if(i) i.value = k === 'price' && v ? fmt(num(v)) : v; }
   el.querySelector('.del').onclick = () => { el.remove(); if(!$('itemsForm').children.length) addItem(); render(); };
@@ -392,7 +413,7 @@ function readItems(){
 /* 자주 쓰는 품목 기억 */
 function rememberProducts(items){
   const p = store.get('products', {});
-  items.forEach(it => { if(it.name && num(it.price)) p[it.name] = { spec: it.spec, unit: it.unit, price: num(it.price), vat: vatMode() }; });
+  items.forEach(it => { if(it.name && num(it.price)) p[it.name] = { spec: it.spec, unit: it.unit, price: num(it.price), vat: vatMode(), specimg: it.specimg }; });
   store.set('products', p); fillDatalist();
 }
 function fillDatalist(){
@@ -437,8 +458,11 @@ function render(){
     el.querySelector('.no').textContent = i + 1;
     el.querySelector('.ph').textContent = c.inc ? '단가 (VAT 포함)' : '단가 (VAT 별도)';
     const r = c.rows[i];
+    const sp = r && specFor(r), sel = el.querySelector('[data-f="specimg"]');
+    el.querySelector('.specnote').innerHTML = sp ? `<b>✓ ${esc(sp.model)}</b> 치수·사양 이미지가 견적서와 함께 가요` : (sel.value === 'none' ? '사양 이미지를 보내지 않아요' : (r && r.name ? '맞는 모델을 못 찾았어요. 위에서 골라 주세요' : ''));
     el.querySelector('.amt').textContent = r && r.line ? `공급가액 ${fmt(r.supply)}원 + 세액 ${fmt(r.tax)}원 = ${fmt(r.supply + r.tax)}원` : '';
   });
+  renderSpecList();
   $('fSub').textContent = fmt(c.sub) + '원'; $('fVat').textContent = fmt(c.vat) + '원'; $('fGrand').textContent = fmt(c.grand) + '원';
 
   // 시트
@@ -463,6 +487,71 @@ function render(){
   fit();
   saveDraft();
 }
+/* 기계 치수·사양 이미지 (spec/모델.jpg) */
+const SPECS = [["washer-large_SR-7830","washer-large","대형세탁기","SR-7830",30],["washer-large_SR-7850","washer-large","대형세탁기","SR-7850",50],["washer-large_SR-7880","washer-large","대형세탁기","SR-7880",80],["washer-large_SR-7100","washer-large","대형세탁기","SR-7100",100],["washer-large_SR-8015","washer-large","대형세탁기","SR-8015",150],["washer-mid_SR-7513","washer-mid","중소형세탁기","SR-7513",13],["washer-mid_SR-7517","washer-mid","중소형세탁기","SR-7517",17],["washer-mid_SR-7523","washer-mid","중소형세탁기","SR-7523",23],["washer-coin_C-7510","washer-coin","코인세탁기","C-7510",10],["washer-coin_C-7517","washer-coin","코인세탁기","C-7517",17],["washer-coin_C-7523","washer-coin","코인세탁기","C-7523",23],["washer-shoe_C-7510","washer-shoe","운동화 코인세탁기","C-7510",10],["dryer-large_SR-7625","dryer-large","대형건조기","SR-7625",25],["dryer-large_SR-7630","dryer-large","대형건조기","SR-7630",30],["dryer-large_SR-7650","dryer-large","대형건조기","SR-7650",50],["dryer-large_SR-7680","dryer-large","대형건조기","SR-7680",80],["dryer-large_SR-7700","dryer-large","대형건조기","SR-7700",100],["dryer-large_SR-8150","dryer-large","대형건조기","SR-8150",150],["dryer-mid_SR-7615","dryer-mid","중소형건조기","SR-7615",15],["dryer-mid_SR-7620","dryer-mid","중소형건조기","SR-7620",20],["dryer-coin_SR-7615","dryer-coin","코인건조기","SR-7615",15],["dryer-coin_SR-7620","dryer-coin","코인건조기","SR-7620",20],["dryer-coin_SR-7625","dryer-coin","코인건조기","SR-7625",25],["boiler-oil_PHO-30","boiler-oil","기름 스팀보일러","PHO-30",30],["boiler-oil_PHO-50","boiler-oil","기름 스팀보일러","PHO-50",50],["boiler-oil_PHO-80","boiler-oil","기름 스팀보일러","PHO-80",80],["boiler-oil_PHO-100","boiler-oil","기름 스팀보일러","PHO-100",100],["boiler-oil_PHO-150","boiler-oil","기름 스팀보일러","PHO-150",150],["boiler-oil_PHO-200","boiler-oil","기름 스팀보일러","PHO-200",200],["boiler-oil_PHO-300","boiler-oil","기름 스팀보일러","PHO-300",300],["boiler-oil_PHO-500","boiler-oil","기름 스팀보일러","PHO-500",500],["boiler-oil_PHO-1000","boiler-oil","기름 스팀보일러","PHO-1000",1000],["boiler-oil_PHO-1500","boiler-oil","기름 스팀보일러","PHO-1500",1500],["boiler-elec_PHE-5","boiler-elec","전기 스팀보일러","PHE-5",5],["boiler-elec_PHE-10","boiler-elec","전기 스팀보일러","PHE-10",10],["boiler-elec_PHE-15","boiler-elec","전기 스팀보일러","PHE-15",15],["boiler-elec_PHE-20","boiler-elec","전기 스팀보일러","PHE-20",20],["boiler-elec_PHE-25","boiler-elec","전기 스팀보일러","PHE-25",25],["boiler-elec_PHE-30","boiler-elec","전기 스팀보일러","PHE-30",30],["boiler-elec_PHE-40","boiler-elec","전기 스팀보일러","PHE-40",40],["boiler-elec_PHE-50","boiler-elec","전기 스팀보일러","PHE-50",50],["boiler-elec_PHE-60","boiler-elec","전기 스팀보일러","PHE-60",60],["boiler-elec_PHE-70","boiler-elec","전기 스팀보일러","PHE-70",70],["boiler-elec_PHE-80","boiler-elec","전기 스팀보일러","PHE-80",80],["boiler-elec_PHE-90","boiler-elec","전기 스팀보일러","PHE-90",90],["boiler-elec_PHE-100","boiler-elec","전기 스팀보일러","PHE-100",100],["boiler-elec_PHE-120","boiler-elec","전기 스팀보일러","PHE-120",120],["boiler-elec_PHE-150","boiler-elec","전기 스팀보일러","PHE-150",150],["boiler-elec_PHE-200","boiler-elec","전기 스팀보일러","PHE-200",200],["boiler-elec_PHE-300","boiler-elec","전기 스팀보일러","PHE-300",300],["boiler-elec_PHE-400","boiler-elec","전기 스팀보일러","PHE-400",400],["boiler-elec_PHE-500","boiler-elec","전기 스팀보일러","PHE-500",500],["boiler-elec_PHE-600","boiler-elec","전기 스팀보일러","PHE-600",600],["boiler-elec_PHE-700","boiler-elec","전기 스팀보일러","PHE-700",700],["boiler-elec_PHE-1000","boiler-elec","전기 스팀보일러","PHE-1000",1000]].map(([id, group, gname, model, cap]) => ({ id, group, gname, model, cap }));
+function specOptions(){
+  let h = '<option value="">자동으로 찾기</option><option value="none">보내지 않기</option>', g = '';
+  SPECS.forEach(s => {
+    if(s.gname !== g){ if(g) h += '</optgroup>'; g = s.gname; h += `<optgroup label="${g}">`; }
+    h += `<option value="${s.id}">${s.model} (${s.cap}${/boiler-elec/.test(s.group) ? 'kW' : /boiler/.test(s.group) ? 'kg/h' : 'kg'})</option>`;
+  });
+  return h + '</optgroup>';
+}
+function detectSpec(text){
+  const t = (text || '').toUpperCase().replace(/\s+/g, '');
+  if(!t) return null;
+  const has = w => t.includes(w);
+  const pick = list => list.find(s => has('운동화') && s.group === 'washer-shoe') || list.find(s => has('코인') && /coin/.test(s.group)) || list.find(s => has('중소형') && /mid/.test(s.group)) || list.find(s => !/coin|shoe/.test(s.group)) || list[0];
+  const m = t.match(/(PHO|PHE|SR|C)-?(\d{1,4})/);
+  if(m){ const list = SPECS.filter(s => s.model === `${m[1]}-${m[2]}`); if(list.length) return pick(list); }
+  const n = (re) => { const x = t.match(re); return x ? +x[1].replace(/,/g, '') : 0; };
+  const byCap = (groups, cap) => SPECS.find(s => groups.includes(s.group) && s.cap === cap);
+  if(has('보일러')){
+    const kw = n(/([\d,]+)KW/), kg = n(/([\d,]+)KG/);
+    if(has('전기') || kw) return byCap(['boiler-elec'], kw || kg);
+    return byCap(['boiler-oil'], kg);
+  }
+  const kg = n(/([\d,]+)(KG|킬로)/);
+  if(!kg) return null;
+  if(has('세탁기')){
+    if(has('운동화')) return byCap(['washer-shoe'], kg);
+    if(has('코인')) return byCap(['washer-coin'], kg);
+    return byCap(['washer-mid', 'washer-large'], kg);
+  }
+  if(has('건조기')){
+    if(has('코인')) return byCap(['dryer-coin'], kg);
+    return byCap(has('대형') && !has('중소형') ? ['dryer-large', 'dryer-mid'] : ['dryer-mid', 'dryer-large'], kg);
+  }
+  return null;
+}
+function specFor(it){
+  if(it.specimg === 'none') return null;
+  if(it.specimg) return SPECS.find(s => s.id === it.specimg) || null;
+  return detectSpec(`${it.name} ${it.spec}`);
+}
+function currentSpecs(){
+  const seen = new Set();
+  return readItems().map(specFor).filter(s => s && !seen.has(s.id) && seen.add(s.id));
+}
+function renderSpecList(){
+  const box = $('specList'); if(!box) return;
+  const list = currentSpecs();
+  box.innerHTML = list.length
+    ? '함께 보낼 사양 이미지: ' + list.map(s => `<a href="spec/${s.id}.jpg" target="_blank">🖼 ${esc(s.model)}</a>`).join('')
+    : '함께 보낼 사양 이미지가 아직 없어요.';
+}
+const specCache = {};
+async function specFiles(){
+  return Promise.all(currentSpecs().map(async s => {
+    if(!specCache[s.id]){
+      const res = await fetch(`spec/${s.id}.jpg`);
+      if(!res.ok) throw new Error('spec');
+      specCache[s.id] = new File([await res.blob()], `사양서_${s.model}_${s.gname.replace(/\s/g, '')}.jpg`, { type: 'image/jpeg' });
+    }
+    return specCache[s.id];
+  }));
+}
+const toB64 = f => new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(fr.result.split(',')[1]); fr.onerror = no; fr.readAsDataURL(f); });
 const esc = s => (s || '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
 /* 미리보기 크기 맞추기 */
@@ -558,7 +647,7 @@ document.addEventListener('input', e => {
     if(p){
       const el = t.closest('.item');
       const set = (f, v) => { const i = el.querySelector(`[data-f="${f}"]`); if(!i.value && v) i.value = v; };
-      set('spec', p.spec); set('unit', p.unit);
+      set('spec', p.spec); set('unit', p.unit); set('specimg', p.specimg);
       let price = p.price;
       if(p.vat !== vatMode()) price = vatMode() === 'in' ? Math.round(price * 1.1) : Math.round(price / 1.1);
       set('price', fmt(price));
@@ -608,9 +697,10 @@ async function run(task){
   try{ toast('견적서를 만드는 중이에요…'); await task(); }
   catch(e){ toast(e.message === 'lib' ? '인터넷 연결을 확인해 주세요' : '만들기에 실패했어요. 인쇄 버튼으로 PDF 저장해 주세요'); }
 }
-function summary(){
-  const c = compute();
-  return `안녕하세요, 그린벨리입니다.\n요청하신 견적서 보내드립니다.\n\n합계금액: ${fmt(c.grand)}원 (부가세 포함)\n\n문의: 010-4461-2300 / ldy5342@naver.com\n감사합니다.`;
+function summary(n = currentSpecs().length){
+  const c = compute(), who = $('client').value.trim();
+  const items = c.rows.filter(r => r.name).map(r => `· ${r.name}${r.spec ? ' ' + r.spec : ''}${r.q ? ' ' + fmt(r.q) + (r.unit || '대') : ''}`).join('\n');
+  return `안녕하세요${who ? ', ' + who + ' ' + ($('person').value.trim() || '담당자') + '님' : ''}. 그린벨리입니다.\n요청하신 견적서 보내드립니다.\n\n${items ? items + '\n' : ''}합계금액: ${fmt(c.grand)}원 (부가세 포함)\n${n ? '\n설치 전 확인하실 수 있도록 기계 치수·사양 이미지도 함께 보내드립니다.\n' : ''}\n검토 후 궁금하신 점은 편하게 연락 주세요.\n그린벨리 이동연 010-4461-2300`;
 }
 function savePdf(){ run(async () => { download(await makePdf()); toast('PDF를 저장했어요'); }); }
 function saveImage(){ run(async () => {
@@ -618,11 +708,11 @@ function saveImage(){ run(async () => {
   if(await shareFile(f) === 'none'){ download(f); toast('이미지를 저장했어요'); }
 }); }
 function openSend(){ $('sendSheet').hidden = false; }
-let mailFile = null;
+let mailFile = null, mailSpecs = [];
 const mailSubj = () => `[그린벨리] 견적서 - ${$('client').value.trim() || '귀사'}`;
 function mailBody(){
   const c = compute(), who = $('client').value.trim();
-  return `안녕하세요${who ? ', ' + who + ' ' + ($('person').value.trim() || '담당자') + '님' : ''}.\n그린벨리입니다.\n\n요청하신 견적서를 첨부하여 보내드립니다.\n\n· 합계금액: ${fmt(c.grand)}원 (부가세 포함)\n\n검토 후 궁금하신 점은 편하게 연락 주세요.\n감사합니다.\n\n그린벨리 이동연\n010-4461-2300 / ldy5342@naver.com`;
+  return `안녕하세요${who ? ', ' + who + ' ' + ($('person').value.trim() || '담당자') + '님' : ''}.\n그린벨리입니다.\n\n요청하신 견적서를 첨부하여 보내드립니다.${mailSpecs.length ? '\n설치 전 확인하실 수 있도록 기계 치수·사양 이미지(' + mailSpecs.map(f => f.name.split('_')[1]).join(', ') + ')도 함께 첨부했습니다.' : ''}\n\n· 합계금액: ${fmt(c.grand)}원 (부가세 포함)\n\n검토 후 궁금하신 점은 편하게 연락 주세요.\n감사합니다.\n\n그린벨리 이동연\n010-4461-2300 / ldy5342@naver.com`;
 }
 /* 자동 발송: 구글 Apps Script 웹 앱 주소 */
 const SEND_URL = 'https://script.google.com/macros/s/AKfycbyXI3ooBf912O0St9Z2ZKS2dSHM1X8LLzv3jAeFTXymWXsjlNXuuFdLkBdlbJ7OnPPh/exec';
@@ -633,11 +723,16 @@ async function sendDirect(){
   if(!pin){ toast('발송 비밀번호를 입력해 주세요'); return; }
   toast('메일을 보내는 중이에요…');
   try{
-    const pdf = await new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(fr.result.split(',')[1]); fr.onerror = no; fr.readAsDataURL(mailFile); });
+    const pdf = await toB64(mailFile);
+    const images = await Promise.all(mailSpecs.map(async f => ({ filename: f.name, data: await toB64(f) })));
     const res = await fetch(SEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ key: pin, to, subject: mailSubj(), body: mailBody(), filename: mailFile.name, pdf }) });
+      body: JSON.stringify({ key: pin, to, subject: mailSubj(), body: mailBody(), filename: mailFile.name, pdf, images }) });
     const out = await res.json();
-    if(out.ok){ store.set('pin', pin); $('mailSheet').hidden = true; toast(to + '로 보냈어요'); }
+    if(out.ok){
+      store.set('pin', pin); $('mailSheet').hidden = true;
+      if(images.length && out.images === undefined) toast('메일은 보냈는데, 사양 이미지는 구글 코드를 업데이트해야 같이 가요');
+      else toast(to + '로 보냈어요');
+    }
     else if(out.error === 'key'){ store.set('pin', ''); $('pinRow').hidden = false; toast('발송 비밀번호가 틀렸어요'); }
     else toast('발송에 실패했어요: ' + (out.error || '알 수 없는 오류'));
   }catch(e){ toast('발송에 실패했어요. 인터넷 연결을 확인해 주세요'); }
@@ -647,6 +742,9 @@ function sendEmail(){ run(async () => {
   $('pinRow').hidden = !!store.get('pin', '');
   $('sendSheet').hidden = true;
   mailFile = await makePdf();
+  try{ mailSpecs = await specFiles(); }catch(e){ mailSpecs = []; toast('사양 이미지를 못 불러왔어요. 견적서만 보낼게요'); }
+  $('mFiles').textContent = [mailFile.name, ...mailSpecs.map(f => f.name)].join('\n');
+  $('mFiles').style.whiteSpace = 'pre-line';
   $('mTo').textContent = $('email').value.trim() || '(받는 사람 이메일을 입력해 주세요)';
   $('mSubj').textContent = mailSubj();
   $('mBody').textContent = mailBody();
@@ -675,16 +773,43 @@ function mailTo(pkg = 'com.nhn.android.mail'){
     ? `intent:${q}#Intent;scheme=mailto;package=${pkg};S.browser_fallback_url=${encodeURIComponent('mailto:' + q)};end`
     : `mailto:${q}`;
 }
+/* 문자·카톡: 파일을 먼저 만들어 두고, '보내기'를 누르는 순간 공유 창을 연다 (휴대폰이 버튼 누른 직후에만 공유를 허락함) */
+let smsFiles = [];
 function sendSms(){ run(async () => {
   $('sendSheet').hidden = true;
-  const f = await makePdf(), body = summary();
-  const r = await shareFile(f, body);
-  if(r !== 'none') return;
-  download(f);
+  const pdf = await makePdf();
+  let specs = [];
+  try{ specs = await specFiles(); }catch(e){ toast('사양 이미지를 못 불러왔어요. 견적서만 보낼게요'); }
+  smsFiles = [pdf, ...specs];
+  $('smsFiles').innerHTML = smsFiles.map(f => '📎 ' + esc(f.name)).join('<br>');
+  $('smsText').value = summary(specs.length);
+  $('smsSheet').hidden = false;
+}); }
+function smsGo(){
+  const body = $('smsText').value;
+  const copy = copyQuiet(body);
+  let files = smsFiles;
+  const can = fs => isMobile() && navigator.canShare && navigator.canShare({ files: fs });
+  if(!can(files) && can(files.slice(0, 1))) files = files.slice(0, 1);
+  if(can(files)){
+    navigator.share({ files, text: body, title: files[0].name })
+      .then(() => { $('smsSheet').hidden = true; copy.then(ok => toast(ok ? '글도 복사해 뒀어요. 글이 빠졌으면 붙여넣기 하세요' : '보냈어요')); })
+      .catch(e => { if(e.name !== 'AbortError') fallbackSms(body); });
+    return;
+  }
+  fallbackSms(body);
+}
+function copyQuiet(t){
+  if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t).then(() => true, () => false);
+  return Promise.resolve(false);
+}
+function fallbackSms(body){
+  smsFiles.forEach((f, i) => setTimeout(() => download(f), i * 400));
+  $('smsSheet').hidden = true;
   const phone = $('phone').value.replace(/[^\d+]/g, '');
   if(isMobile()) location.href = `sms:${phone}${/iPhone|iPad/.test(navigator.userAgent) ? '&' : '?'}body=${encodeURIComponent(body)}`;
-  else toast('PDF를 저장했어요. 카카오톡 PC나 문자로 보내 주세요');
-}); }
+  else { copyQuiet(body); toast('파일을 저장하고 글을 복사했어요. 카카오톡 PC나 문자로 보내 주세요'); }
+}
 
 let tt; function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 2200); }
 
