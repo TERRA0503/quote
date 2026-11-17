@@ -506,6 +506,14 @@ const SPECS = [
   { id: 'PHE-10', group: '전기 스팀보일러', name: '10kW' },
   { id: 'PHE-15', group: '전기 스팀보일러', name: '15kW' },
   { id: 'PHE-20', group: '전기 스팀보일러', name: '20kW' },
+  { id: 'SR-7615', group: '상업용 건조기', name: '15kg' },
+  { id: 'SR-7620', group: '상업용 건조기', name: '20kg' },
+  { id: 'SR-7625', group: '상업용 건조기', name: '25kg' },
+  { id: 'SR-7630', group: '상업용 건조기', name: '30kg' },
+  { id: 'SR-7650', group: '상업용 건조기', name: '50kg' },
+  { id: 'CD-7615', model: 'SR-7615', group: '코인 건조기', name: '15kg' },
+  { id: 'CD-7620', model: 'SR-7620', group: '코인 건조기', name: '20kg' },
+  { id: 'CD-7625', model: 'SR-7625', group: '코인 건조기', name: '25kg' },
 ];
 let specSel = store.get('specSel', []).filter(id => SPECS.some(s => s.id === id));
 function currentSpecs(){ return SPECS.filter(s => specSel.includes(s.id)); }
@@ -517,7 +525,7 @@ function renderSpecPick(){
   let h = `<div class="ttl">함께 보낼 제품 사양서<small>${specSel.length ? specSel.length + '개 선택' : '선택 안 함'}</small></div>`, g = '';
   SPECS.forEach(s => {
     if(s.group !== g){ if(g) h += '</div>'; g = s.group; h += `<div class="grp">${g}</div><div class="chips">`; }
-    h += `<button type="button" class="chip${specSel.includes(s.id) ? ' on' : ''}" onclick="toggleSpec('${s.id}')">${specSel.includes(s.id) ? '✓ ' : ''}${s.id}<small>${s.name}</small><a class="eye" href="spec/${s.id}.jpg" target="_blank" onclick="event.stopPropagation()" title="미리보기">🔍</a></button>`;
+    h += `<button type="button" class="chip${specSel.includes(s.id) ? ' on' : ''}" onclick="toggleSpec('${s.id}')">${specSel.includes(s.id) ? '✓ ' : ''}${s.model || s.id}<small>${s.name}</small><a class="eye" href="spec/${s.id}.jpg" target="_blank" onclick="event.stopPropagation()" title="미리보기">🔍</a></button>`;
   });
   h += '</div>';
   document.querySelectorAll('[data-specpick]').forEach(el => el.innerHTML = h);
@@ -528,7 +536,7 @@ async function specFiles(){
     if(!specCache[s.id]){
       const res = await fetch(`spec/${s.id}.jpg`);
       if(!res.ok) throw new Error('spec');
-      specCache[s.id] = new File([await res.blob()], `사양서_${s.id}_${s.group.replace(/\s/g, '')}${s.name}.jpg`, { type: 'image/jpeg' });
+      specCache[s.id] = new File([await res.blob()], `사양서_${s.model || s.id}_${s.group.replace(/\s/g, '')}${s.name}.jpg`, { type: 'image/jpeg' });
     }
     return specCache[s.id];
   }));
