@@ -65,10 +65,16 @@
   .item .no{position:absolute;top:-9px;left:10px;background:var(--blue);color:#fff;font-size:11px;font-weight:800;border-radius:6px;padding:1px 7px}
   .item .del{position:absolute;top:6px;right:6px;border:0;background:none;color:#a7b0bd;font-size:18px;cursor:pointer;padding:2px 6px}
   .item .amt{grid-column:1/-1;text-align:right;font-size:13px;color:var(--navy);font-weight:700}
-  .item .specnote{grid-column:1/-1;font-size:12px;color:var(--sub);margin-top:-4px}
-  .item .specnote b{color:var(--green)}
-  .speclist{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;font-size:12.5px;color:var(--sub);align-items:center}
-  .speclist a{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:8px;padding:5px 9px;color:var(--navy);font-weight:700;text-decoration:none;background:#fff}
+  .specpick{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fbfcfe}
+  .specpick .ttl{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+  .specpick .ttl small{font-weight:600;color:var(--sub)}
+  .specpick .grp{font-size:11.5px;color:var(--sub);font-weight:700;margin:8px 0 4px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 11px;font-size:13px;font-weight:700;color:var(--navy);cursor:pointer}
+  .chip small{font-weight:500;color:var(--sub);margin-left:3px}
+  .chip.on{background:var(--green);border-color:var(--green);color:#fff}
+  .chip.on small{color:#eaf6dd}
+  .chip .eye{margin-left:6px;opacity:.6;text-decoration:none;color:inherit}
   .filelist{font-size:13px;color:var(--ink);line-height:1.7;border-bottom:1px solid var(--line);padding-bottom:6px}
   #smsText{min-height:150px;font-size:14px}
   .items-list{display:flex;flex-direction:column;gap:18px;padding-top:16px}
@@ -232,8 +238,8 @@
         <button class="btn green" onclick="sendEmail()">이메일로 보내기</button>
         <button class="btn green" onclick="sendSms()">문자 · 카톡으로 보내기</button>
       </div>
-      <div class="speclist" id="specList"></div>
-      <p class="hint">이메일과 문자·카톡으로 보낼 때 견적서 PDF와 기계 치수·사양 이미지가 각각 따로 첨부돼요. 사양 이미지는 품목의 모델명(예: SR-7517)이나 품명·용량(예: 중소형세탁기 17kg)을 보고 자동으로 골라져요.</p>
+      <div class="specpick" data-specpick></div>
+      <p class="hint">함께 보낼 제품을 누르면 초록색으로 바뀌어요. 이메일과 문자·카톡으로 보낼 때 견적서 PDF와 고른 제품의 치수·사양 이미지가 각각 따로 첨부돼요.</p>
     </section>
   </div>
 
@@ -317,6 +323,7 @@
 <div class="sheetbg" id="sendSheet" hidden onclick="if(event.target===this)this.hidden=true">
   <div class="sendbox">
     <b>견적서 보내기</b>
+    <div class="specpick" data-specpick style="margin:0 0 4px"></div>
     <button class="btn green" onclick="sendEmail()">이메일로 보내기</button>
     <button class="btn green" onclick="sendSms()">문자 · 카톡으로 보내기</button>
     <button class="btn ghost" onclick="saveImage()">이미지로 저장</button>
@@ -395,8 +402,6 @@ function addItem(d = {}){
     <label class="f">단위<input data-f="unit" placeholder="예) 대"></label>
     <label class="f">수량<input data-f="qty" inputmode="numeric" placeholder="예) 1"></label>
     <label class="f"><span class="ph">단가</span><input data-f="price" inputmode="numeric" placeholder="예) 2,850,000"></label>
-    <label class="f full">치수·사양 이미지<select data-f="specimg">${specOptions()}</select></label>
-    <div class="specnote"></div>
     <div class="amt"></div>`;
   for(const [k, v] of Object.entries(d)){ const i = el.querySelector(`[data-f="${k}"]`); if(i) i.value = k === 'price' && v ? fmt(num(v)) : v; }
   el.querySelector('.del').onclick = () => { el.remove(); if(!$('itemsForm').children.length) addItem(); render(); };
@@ -413,7 +418,7 @@ function readItems(){
 /* 자주 쓰는 품목 기억 */
 function rememberProducts(items){
   const p = store.get('products', {});
-  items.forEach(it => { if(it.name && num(it.price)) p[it.name] = { spec: it.spec, unit: it.unit, price: num(it.price), vat: vatMode(), specimg: it.specimg }; });
+  items.forEach(it => { if(it.name && num(it.price)) p[it.name] = { spec: it.spec, unit: it.unit, price: num(it.price), vat: vatMode() }; });
   store.set('products', p); fillDatalist();
 }
 function fillDatalist(){
@@ -458,11 +463,8 @@ function render(){
     el.querySelector('.no').textContent = i + 1;
     el.querySelector('.ph').textContent = c.inc ? '단가 (VAT 포함)' : '단가 (VAT 별도)';
     const r = c.rows[i];
-    const sp = r && specFor(r), sel = el.querySelector('[data-f="specimg"]');
-    el.querySelector('.specnote').innerHTML = sp ? `<b>✓ ${esc(sp.model)}</b> 치수·사양 이미지가 견적서와 함께 가요` : (sel.value === 'none' ? '사양 이미지를 보내지 않아요' : (r && r.name ? '맞는 모델을 못 찾았어요. 위에서 골라 주세요' : ''));
     el.querySelector('.amt').textContent = r && r.line ? `공급가액 ${fmt(r.supply)}원 + 세액 ${fmt(r.tax)}원 = ${fmt(r.supply + r.tax)}원` : '';
   });
-  renderSpecList();
   $('fSub').textContent = fmt(c.sub) + '원'; $('fVat').textContent = fmt(c.vat) + '원'; $('fGrand').textContent = fmt(c.grand) + '원';
 
   // 시트
@@ -487,58 +489,38 @@ function render(){
   fit();
   saveDraft();
 }
-/* 기계 치수·사양 이미지 (spec/모델.jpg) */
-const SPECS = [["washer-large_SR-7830","washer-large","대형세탁기","SR-7830",30],["washer-large_SR-7850","washer-large","대형세탁기","SR-7850",50],["washer-large_SR-7880","washer-large","대형세탁기","SR-7880",80],["washer-large_SR-7100","washer-large","대형세탁기","SR-7100",100],["washer-large_SR-8015","washer-large","대형세탁기","SR-8015",150],["washer-mid_SR-7513","washer-mid","중소형세탁기","SR-7513",13],["washer-mid_SR-7517","washer-mid","중소형세탁기","SR-7517",17],["washer-mid_SR-7523","washer-mid","중소형세탁기","SR-7523",23],["washer-coin_C-7510","washer-coin","코인세탁기","C-7510",10],["washer-coin_C-7517","washer-coin","코인세탁기","C-7517",17],["washer-coin_C-7523","washer-coin","코인세탁기","C-7523",23],["washer-shoe_C-7510","washer-shoe","운동화 코인세탁기","C-7510",10],["dryer-large_SR-7625","dryer-large","대형건조기","SR-7625",25],["dryer-large_SR-7630","dryer-large","대형건조기","SR-7630",30],["dryer-large_SR-7650","dryer-large","대형건조기","SR-7650",50],["dryer-large_SR-7680","dryer-large","대형건조기","SR-7680",80],["dryer-large_SR-7700","dryer-large","대형건조기","SR-7700",100],["dryer-large_SR-8150","dryer-large","대형건조기","SR-8150",150],["dryer-mid_SR-7615","dryer-mid","중소형건조기","SR-7615",15],["dryer-mid_SR-7620","dryer-mid","중소형건조기","SR-7620",20],["dryer-coin_SR-7615","dryer-coin","코인건조기","SR-7615",15],["dryer-coin_SR-7620","dryer-coin","코인건조기","SR-7620",20],["dryer-coin_SR-7625","dryer-coin","코인건조기","SR-7625",25],["boiler-oil_PHO-30","boiler-oil","기름 스팀보일러","PHO-30",30],["boiler-oil_PHO-50","boiler-oil","기름 스팀보일러","PHO-50",50],["boiler-oil_PHO-80","boiler-oil","기름 스팀보일러","PHO-80",80],["boiler-oil_PHO-100","boiler-oil","기름 스팀보일러","PHO-100",100],["boiler-oil_PHO-150","boiler-oil","기름 스팀보일러","PHO-150",150],["boiler-oil_PHO-200","boiler-oil","기름 스팀보일러","PHO-200",200],["boiler-oil_PHO-300","boiler-oil","기름 스팀보일러","PHO-300",300],["boiler-oil_PHO-500","boiler-oil","기름 스팀보일러","PHO-500",500],["boiler-oil_PHO-1000","boiler-oil","기름 스팀보일러","PHO-1000",1000],["boiler-oil_PHO-1500","boiler-oil","기름 스팀보일러","PHO-1500",1500],["boiler-elec_PHE-5","boiler-elec","전기 스팀보일러","PHE-5",5],["boiler-elec_PHE-10","boiler-elec","전기 스팀보일러","PHE-10",10],["boiler-elec_PHE-15","boiler-elec","전기 스팀보일러","PHE-15",15],["boiler-elec_PHE-20","boiler-elec","전기 스팀보일러","PHE-20",20],["boiler-elec_PHE-25","boiler-elec","전기 스팀보일러","PHE-25",25],["boiler-elec_PHE-30","boiler-elec","전기 스팀보일러","PHE-30",30],["boiler-elec_PHE-40","boiler-elec","전기 스팀보일러","PHE-40",40],["boiler-elec_PHE-50","boiler-elec","전기 스팀보일러","PHE-50",50],["boiler-elec_PHE-60","boiler-elec","전기 스팀보일러","PHE-60",60],["boiler-elec_PHE-70","boiler-elec","전기 스팀보일러","PHE-70",70],["boiler-elec_PHE-80","boiler-elec","전기 스팀보일러","PHE-80",80],["boiler-elec_PHE-90","boiler-elec","전기 스팀보일러","PHE-90",90],["boiler-elec_PHE-100","boiler-elec","전기 스팀보일러","PHE-100",100],["boiler-elec_PHE-120","boiler-elec","전기 스팀보일러","PHE-120",120],["boiler-elec_PHE-150","boiler-elec","전기 스팀보일러","PHE-150",150],["boiler-elec_PHE-200","boiler-elec","전기 스팀보일러","PHE-200",200],["boiler-elec_PHE-300","boiler-elec","전기 스팀보일러","PHE-300",300],["boiler-elec_PHE-400","boiler-elec","전기 스팀보일러","PHE-400",400],["boiler-elec_PHE-500","boiler-elec","전기 스팀보일러","PHE-500",500],["boiler-elec_PHE-600","boiler-elec","전기 스팀보일러","PHE-600",600],["boiler-elec_PHE-700","boiler-elec","전기 스팀보일러","PHE-700",700],["boiler-elec_PHE-1000","boiler-elec","전기 스팀보일러","PHE-1000",1000]].map(([id, group, gname, model, cap]) => ({ id, group, gname, model, cap }));
-function specOptions(){
-  let h = '<option value="">자동으로 찾기</option><option value="none">보내지 않기</option>', g = '';
+/* 기계 치수·사양 이미지 (spec/모델.jpg): 보내기 전에 제품을 골라서 함께 보냄 */
+const SPECS = [
+  { id: 'SR-7517', group: '상업용 세탁기', name: '17kg' },
+  { id: 'SR-7523', group: '상업용 세탁기', name: '23kg' },
+  { id: 'SR-7830', group: '상업용 세탁기', name: '30kg' },
+  { id: 'SR-7850', group: '상업용 세탁기', name: '50kg' },
+  { id: 'C-7517', group: '코인세탁기', name: '17kg' },
+  { id: 'C-7523', group: '코인세탁기', name: '23kg' },
+  { id: 'C-7510', group: '운동화 코인세탁기', name: '10kg' },
+  { id: 'PHO-50', group: '기름 스팀보일러', name: '50kg/h' },
+  { id: 'PHO-80', group: '기름 스팀보일러', name: '80kg/h' },
+  { id: 'PHO-100', group: '기름 스팀보일러', name: '100kg/h' },
+  { id: 'PHO-150', group: '기름 스팀보일러', name: '150kg/h' },
+  { id: 'PHE-5', group: '전기 스팀보일러', name: '5kW' },
+  { id: 'PHE-10', group: '전기 스팀보일러', name: '10kW' },
+  { id: 'PHE-15', group: '전기 스팀보일러', name: '15kW' },
+  { id: 'PHE-20', group: '전기 스팀보일러', name: '20kW' },
+];
+let specSel = store.get('specSel', []).filter(id => SPECS.some(s => s.id === id));
+function currentSpecs(){ return SPECS.filter(s => specSel.includes(s.id)); }
+function toggleSpec(id){
+  specSel = specSel.includes(id) ? specSel.filter(x => x !== id) : [...specSel, id];
+  store.set('specSel', specSel); renderSpecPick();
+}
+function renderSpecPick(){
+  let h = `<div class="ttl">함께 보낼 제품 사양서<small>${specSel.length ? specSel.length + '개 선택' : '선택 안 함'}</small></div>`, g = '';
   SPECS.forEach(s => {
-    if(s.gname !== g){ if(g) h += '</optgroup>'; g = s.gname; h += `<optgroup label="${g}">`; }
-    h += `<option value="${s.id}">${s.model} (${s.cap}${/boiler-elec/.test(s.group) ? 'kW' : /boiler/.test(s.group) ? 'kg/h' : 'kg'})</option>`;
+    if(s.group !== g){ if(g) h += '</div>'; g = s.group; h += `<div class="grp">${g}</div><div class="chips">`; }
+    h += `<button type="button" class="chip${specSel.includes(s.id) ? ' on' : ''}" onclick="toggleSpec('${s.id}')">${specSel.includes(s.id) ? '✓ ' : ''}${s.id}<small>${s.name}</small><a class="eye" href="spec/${s.id}.jpg" target="_blank" onclick="event.stopPropagation()" title="미리보기">🔍</a></button>`;
   });
-  return h + '</optgroup>';
-}
-function detectSpec(text){
-  const t = (text || '').toUpperCase().replace(/\s+/g, '');
-  if(!t) return null;
-  const has = w => t.includes(w);
-  const pick = list => list.find(s => has('운동화') && s.group === 'washer-shoe') || list.find(s => has('코인') && /coin/.test(s.group)) || list.find(s => has('중소형') && /mid/.test(s.group)) || list.find(s => !/coin|shoe/.test(s.group)) || list[0];
-  const m = t.match(/(PHO|PHE|SR|C)-?(\d{1,4})/);
-  if(m){ const list = SPECS.filter(s => s.model === `${m[1]}-${m[2]}`); if(list.length) return pick(list); }
-  const n = (re) => { const x = t.match(re); return x ? +x[1].replace(/,/g, '') : 0; };
-  const byCap = (groups, cap) => SPECS.find(s => groups.includes(s.group) && s.cap === cap);
-  if(has('보일러')){
-    const kw = n(/([\d,]+)KW/), kg = n(/([\d,]+)KG/);
-    if(has('전기') || kw) return byCap(['boiler-elec'], kw || kg);
-    return byCap(['boiler-oil'], kg);
-  }
-  const kg = n(/([\d,]+)(KG|킬로)/);
-  if(!kg) return null;
-  if(has('세탁기')){
-    if(has('운동화')) return byCap(['washer-shoe'], kg);
-    if(has('코인')) return byCap(['washer-coin'], kg);
-    return byCap(['washer-mid', 'washer-large'], kg);
-  }
-  if(has('건조기')){
-    if(has('코인')) return byCap(['dryer-coin'], kg);
-    return byCap(has('대형') && !has('중소형') ? ['dryer-large', 'dryer-mid'] : ['dryer-mid', 'dryer-large'], kg);
-  }
-  return null;
-}
-function specFor(it){
-  if(it.specimg === 'none') return null;
-  if(it.specimg) return SPECS.find(s => s.id === it.specimg) || null;
-  return detectSpec(`${it.name} ${it.spec}`);
-}
-function currentSpecs(){
-  const seen = new Set();
-  return readItems().map(specFor).filter(s => s && !seen.has(s.id) && seen.add(s.id));
-}
-function renderSpecList(){
-  const box = $('specList'); if(!box) return;
-  const list = currentSpecs();
-  box.innerHTML = list.length
-    ? '함께 보낼 사양 이미지: ' + list.map(s => `<a href="spec/${s.id}.jpg" target="_blank">🖼 ${esc(s.model)}</a>`).join('')
-    : '함께 보낼 사양 이미지가 아직 없어요.';
+  h += '</div>';
+  document.querySelectorAll('[data-specpick]').forEach(el => el.innerHTML = h);
 }
 const specCache = {};
 async function specFiles(){
@@ -546,7 +528,7 @@ async function specFiles(){
     if(!specCache[s.id]){
       const res = await fetch(`spec/${s.id}.jpg`);
       if(!res.ok) throw new Error('spec');
-      specCache[s.id] = new File([await res.blob()], `사양서_${s.model}_${s.gname.replace(/\s/g, '')}.jpg`, { type: 'image/jpeg' });
+      specCache[s.id] = new File([await res.blob()], `사양서_${s.id}_${s.group.replace(/\s/g, '')}${s.name}.jpg`, { type: 'image/jpeg' });
     }
     return specCache[s.id];
   }));
@@ -617,6 +599,7 @@ function newQuote(){
   ['client', 'person', 'phone', 'email'].forEach(k => $(k).value = '');
   $('date').value = today(); $('qno').value = nextNo(today());
   $('itemsForm').innerHTML = ''; addItem();
+  specSel = []; store.set('specSel', specSel); renderSpecPick();
   toast('새 견적서를 시작했어요');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -647,7 +630,7 @@ document.addEventListener('input', e => {
     if(p){
       const el = t.closest('.item');
       const set = (f, v) => { const i = el.querySelector(`[data-f="${f}"]`); if(!i.value && v) i.value = v; };
-      set('spec', p.spec); set('unit', p.unit); set('specimg', p.specimg);
+      set('spec', p.spec); set('unit', p.unit);
       let price = p.price;
       if(p.vat !== vatMode()) price = vatMode() === 'in' ? Math.round(price * 1.1) : Math.round(price / 1.1);
       set('price', fmt(price));
@@ -813,7 +796,7 @@ function fallbackSms(body){
 
 let tt; function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 2200); }
 
-fillDatalist(); load(); render();
+fillDatalist(); load(); render(); renderSpecPick();
 (document.fonts ? document.fonts.ready : Promise.resolve()).then(fixTextZoom);
 </script>
 </body>
