@@ -693,7 +693,7 @@ function download(file){
 const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
 async function shareFile(file, text, title){
   if(isMobile() && navigator.canShare && navigator.canShare({ files: [file] })){
-    try{ await navigator.share(text || title ? { files: [file], title: title || file.name, text } : { files: [file] }); return 'shared'; }
+    try{ await navigator.share(text || title ? (title ? { files: [file], title, text } : { files: [file], text }) : { files: [file] }); return 'shared'; }
     catch(e){ if(e.name === 'AbortError') return 'cancel'; toast('공유가 안 됐어요 (' + e.name + '). PDF를 저장할게요'); }
   }
   return 'none';
@@ -807,7 +807,7 @@ function smsGo(kind){
   const can = fs => isMobile() && navigator.canShare && navigator.canShare({ files: fs });
   if(!can(files) && can(files.slice(0, 1))) files = files.slice(0, 1);
   if(can(files)){
-    navigator.share({ files, text: body, title: files[0].name })
+    navigator.share({ files, text: body })
       .then(() => { $('smsSheet').hidden = true; copy.then(ok => toast(ok ? doneMsg : '보냈어요')); })
       .catch(e => { if(e.name !== 'AbortError') fallbackSms(body); });
     return;
