@@ -342,8 +342,8 @@
     <label class="f">보낼 글 (고쳐도 돼요)<textarea id="smsText"></textarea></label>
     <div class="smsto" id="smsTo"></div>
     <div id="smsTwoStep" hidden>
-      <button class="btn navy" style="padding:16px" onclick="smsOpenRoom()">① 문자방 열기 → 글 전송 누르기</button>
-      <button class="btn green" style="padding:16px;margin-top:8px" onclick="smsGo('sms2')">② 돌아와서 파일 보내기</button>
+      <button class="btn navy" style="padding:16px" onclick="smsOpenRoom()">① 문자방 만들기 (전송 말고 뒤로가기)</button>
+      <button class="btn green" style="padding:16px;margin-top:8px" onclick="smsGo('sms2')">② 파일 + 글 한 번에 보내기</button>
     </div>
     <button class="btn green" id="smsOneStep" style="padding:16px" onclick="smsGo('sms')">문자로 보내기</button>
     <button class="btn green" style="padding:16px" onclick="smsGo('kakao')">카톡으로 보내기</button>
@@ -794,7 +794,7 @@ function sendSms(){ run(async () => {
   const two = !!ph && !/iPhone|iPad/.test(navigator.userAgent);
   $('smsTwoStep').hidden = !two; $('smsOneStep').hidden = two;
   $('smsTo').innerHTML = !ph ? `<small>견적서 연락처 칸에 번호를 적으면 문자 보낼 때 번호가 자동으로 들어가거나 복사돼요.</small>`
-    : two ? `받는 번호 <b>${esc(ph)}</b><br><small>①을 누르면 이 번호로 문자창이 열리고 글이 채워져 있어요. <b>거기서 전송을 꼭 눌러주세요.</b> 그다음 돌아와서 ②를 누르고 공유창 맨 위의 그 대화방을 고르면 파일이 가요. (②를 누르면 글도 복사돼 있어서, 글을 안 보냈으면 붙여넣기 하면 돼요)</small>`
+    : two ? `받는 번호 <b>${esc(ph)}</b><br><small>①을 누르면 이 번호로 문자방이 생겨요. 전송하지 말고 뒤로가기로 돌아오세요(임시저장돼도 괜찮아요). ②를 누르고 공유창 맨 위의 그 대화방을 고르면 파일과 글이 같이 들어가요. 글이 안 보이면 입력칸을 길게 눌러 붙여넣기 하세요.</small>`
     : `받는 번호 <b>${esc(ph)}</b><br><small>'문자로 보내기'를 누르면 번호가 복사돼요. 메시지 앱 받는 사람 칸에 붙여넣기만 하세요.</small>`;
   $('smsSheet').hidden = false;
 }); }
@@ -807,7 +807,7 @@ function smsGo(kind){
   const can = fs => isMobile() && navigator.canShare && navigator.canShare({ files: fs });
   if(!can(files) && can(files.slice(0, 1))) files = files.slice(0, 1);
   if(can(files)){
-    navigator.share(kind === 'sms2' ? { files } : { files, text: body, title: files[0].name })
+    navigator.share({ files, text: body, title: files[0].name })
       .then(() => { $('smsSheet').hidden = true; copy.then(ok => toast(ok ? doneMsg : '보냈어요')); })
       .catch(e => { if(e.name !== 'AbortError') fallbackSms(body); });
     return;
