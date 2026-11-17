@@ -669,12 +669,16 @@ async function capture(){
   try{ return await html2canvas($('sheet'), { scale: 2, backgroundColor: '#fff', useCORS: true }); }
   finally{ sc.style.transform = prev; }
 }
-async function makePdf(){
-  const canvas = await capture();
+async function makePdf(canvas){
+  canvas = canvas || await capture();
   const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
   pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
   const name = fileBase() + '.pdf';
   return new File([pdf.output('blob')], name, { type: 'application/pdf' });
+}
+async function makeJpg(canvas){
+  const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.9));
+  return new File([blob], fileBase() + '.jpg', { type: 'image/jpeg' });
 }
 async function makeImage(){
   const canvas = await capture();
@@ -775,18 +779,23 @@ function mailTo(pkg = 'com.nhn.android.mail'){
     : `mailto:${q}`;
 }
 /* 문자·카톡: 파일을 먼저 만들어 두고, '보내기'를 누르는 순간 공유 창을 연다 (휴대폰이 버튼 누른 직후에만 공유를 허락함) */
-let smsFiles = [];
+let smsFilesImg = [], smsFiles = [];
 function sendSms(){ run(async () => {
   $('sendSheet').hidden = true;
-  const pdf = await makePdf();
+  const canvas = await capture();
+  const pdf = await makePdf(canvas), jpg = await makeJpg(canvas);
   let specs = [];
   try{ specs = await specFiles(); }catch(e){ toast('사양 이미지를 못 불러왔어요. 견적서만 보낼게요'); }
   smsFiles = [pdf, ...specs];
-  $('smsFiles').innerHTML = smsFiles.map(f => '📎 ' + esc(f.name)).join('<br>');
+  smsFilesImg = [jpg, ...specs];
+  $('smsFiles').innerHTML = '📎 견적서 (문자: 사진 / 카톡: PDF)<br>' + specs.map(f => '📎 ' + esc(f.name)).join('<br>');
   $('smsText').value = summary(specs.length);
   const ph = $('phone').value.trim();
-  $('smsTwoStep').hidden = !ph; $('smsOneStep').hidden = !!ph;
-  $('smsTo').innerHTML = ph ? `받는 번호 <b>${esc(ph)}</b><br><small>①을 누르면 이 번호로 문자창이 열려요. 글을 보내고 돌아와서 ②를 누르면, 공유창 맨 위의 그 대화방을 고르면 돼요. (②를 누를 때 번호도 복사돼요)</small>` : `<small>견적서 연락처 칸에 번호를 적으면 문자 보낼 때 번호가 자동으로 복사돼요.</small>`;
+  const two = !!ph && !/iPhone|iPad/.test(navigator.userAgent);
+  $('smsTwoStep').hidden = !two; $('smsOneStep').hidden = two;
+  $('smsTo').innerHTML = !ph ? `<small>견적서 연락처 칸에 번호를 적으면 문자 보낼 때 번호가 자동으로 들어가거나 복사돼요.</small>`
+    : two ? `받는 번호 <b>${esc(ph)}</b><br><small>①을 누르면 이 번호로 문자창이 열려요. 글을 보내고 돌아와서 ②를 누르면, 공유창 맨 위의 그 대화방을 고르면 돼요.</small>`
+    : `받는 번호 <b>${esc(ph)}</b><br><small>'문자로 보내기'를 누르면 번호가 복사돼요. 메시지 앱 받는 사람 칸에 붙여넣기만 하세요.</small>`;
   $('smsSheet').hidden = false;
 }); }
 function smsGo(kind){
@@ -794,7 +803,7 @@ function smsGo(kind){
   const usePhone = (kind === 'sms' || kind === 'sms2') && phone;
   const copy = copyQuiet(usePhone ? phone.replace(/[^0-9]/g, '') : body);
   const doneMsg = usePhone ? '번호를 복사해 뒀어요. 받는 사람 칸을 길게 눌러 붙여넣기 하세요' : '글도 복사해 뒀어요. 글이 빠졌으면 붙여넣기 하세요';
-  let files = smsFiles;
+  let files = kind === 'kakao' ? smsFiles : smsFilesImg;
   const can = fs => isMobile() && navigator.canShare && navigator.canShare({ files: fs });
   if(!can(files) && can(files.slice(0, 1))) files = files.slice(0, 1);
   if(can(files)){
