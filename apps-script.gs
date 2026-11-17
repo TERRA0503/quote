@@ -2,6 +2,7 @@
  * 그린벨리 견적서 메일 자동 발송 (Google Apps Script)
  * 1) PIN 을 원하는 발송 비밀번호로 바꾼다.
  * 2) 배포 → 새 배포 → 유형: 웹 앱 / 실행 계정: 나 / 액세스 권한: 모든 사용자 → 배포
+ *    (코드를 고친 뒤에는: 배포 → 배포 관리 → 연필(수정) → 버전: 새 버전 → 배포. 주소는 그대로 유지돼요)
  * 3) 나온 웹 앱 URL을 견적서 페이지의 SEND_URL 에 넣는다.
  */
 const PIN = '여기에-발송-비밀번호';
@@ -12,11 +13,14 @@ function doPost(e) {
   try {
     const d = JSON.parse(e.postData.contents);
     if (d.key !== PIN) return out({ ok: false, error: 'key' });
-    const pdf = Utilities.newBlob(Utilities.base64Decode(d.pdf), 'application/pdf', d.filename);
-    GmailApp.sendEmail(d.to, d.subject, d.body, {
-      attachments: [pdf], name: SENDER_NAME, replyTo: REPLY_TO, bcc: REPLY_TO
+    const files = [Utilities.newBlob(Utilities.base64Decode(d.pdf), 'application/pdf', d.filename)];
+    (d.images || []).forEach(function (im) {
+      files.push(Utilities.newBlob(Utilities.base64Decode(im.data), 'image/jpeg', im.filename));
     });
-    return out({ ok: true });
+    GmailApp.sendEmail(d.to, d.subject, d.body, {
+      attachments: files, name: SENDER_NAME, replyTo: REPLY_TO, bcc: REPLY_TO
+    });
+    return out({ ok: true, images: files.length - 1 });
   } catch (err) {
     return out({ ok: false, error: String(err) });
   }
