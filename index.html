@@ -551,6 +551,22 @@ async function specFiles(){
     return specCache[s.id];
   }));
 }
+/* 문자(MMS)용: 치수 1장 + 사양표 1장으로 나눈 작은 사진 (폰이 줄여도 글씨가 덜 깨짐) */
+async function specFilesMms(){
+  const out = await Promise.all(currentSpecs().map(async s => {
+    const k = 'mms:' + s.id;
+    if(!specCache[k]){
+      const base = `사양서_${s.model || s.id}_${s.group.replace(/\s/g, '')}${s.name}`;
+      specCache[k] = await Promise.all([1, 2].map(async n => {
+        const res = await fetch(`spec/mms/${s.id}_${n}.jpg`);
+        if(!res.ok) throw new Error('spec');
+        return new File([await res.blob()], `${base}_${n === 1 ? '치수' : '사양'}.jpg`, { type: 'image/jpeg' });
+      }));
+    }
+    return specCache[k];
+  }));
+  return out.flat();
+}
 const toB64 = f => new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(fr.result.split(',')[1]); fr.onerror = no; fr.readAsDataURL(f); });
 const esc = s => (s || '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
@@ -787,7 +803,9 @@ function sendSms(){ run(async () => {
   let specs = [];
   try{ specs = await specFiles(); }catch(e){ toast('사양 이미지를 못 불러왔어요. 견적서만 보낼게요'); }
   smsFiles = [pdf, ...specs];
-  smsFilesImg = [jpg, ...specs];
+  let specsMms = specs;
+  try{ if(specs.length) specsMms = await specFilesMms(); }catch(e){}
+  smsFilesImg = [jpg, ...specsMms];
   $('smsFiles').innerHTML = '📎 견적서 (문자: 사진 / 카톡: PDF)<br>' + specs.map(f => '📎 ' + esc(f.name)).join('<br>');
   $('smsText').value = summary(specs.length);
   const ph = $('phone').value.trim();
