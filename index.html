@@ -115,6 +115,9 @@
     .mbar{display:flex;gap:8px;position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;padding:10px max(12px,env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom));box-shadow:0 -2px 12px rgba(29,52,97,.12)}
     .mbar .btn{flex:1;padding:13px}
     .mbar .btn.navy{background:var(--navy);color:#fff}
+    /* 모바일: 저장·보내기 버튼은 아래 고정 바에서, 여기선 사양서 선택만 */
+    .sendcard > h2, .sendcard > .actions{display:none}
+    .sendcard .specpick{margin-top:0}
   }
 
   /* ── 견적서 시트 (A4) ── */
@@ -235,7 +238,7 @@
       <p class="hint">거래 조건과 특이사항은 이 기기에 기억돼서 다음 견적에도 그대로 나와요.</p>
     </section>
 
-    <section class="card">
+    <section class="card sendcard">
       <h2>저장 · 보내기</h2>
       <div class="actions">
         <button class="btn navy" onclick="savePdf()">PDF 저장</button>
