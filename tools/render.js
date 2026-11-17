@@ -10,7 +10,20 @@ const logo = img64('logo.png');
 function page(it){
   const dim = it.rows.find(r => r[0].startsWith('외형'))[1].replace(' mm', '');
   const [w, d, h] = dim.split('×').map(s => s.trim());
-  const photo = img64(`/home/user/greenvalley/img/prod/cut/${it.photo}.png`);
+  const g = it.geo;
+  const photo = img64(g ? `3d/${it.id}.png` : `/home/user/greenvalley/img/prod/cut/${it.photo}.png`);
+  let stage;
+  if(g){
+    const S = 440 / g.H, Wd = g.W * S, fw = g.fw * S, fh = g.fh * S, dx = g.dx * S, dy = g.dy * S;
+    const x1 = fw + 14, y1 = 440 + 8, x2 = fw + dx + 14, y2 = fh + 8;
+    stage = `<div class="stage" style="width:${Wd}px;margin:0 150px 64px 96px">
+      <img src="${photo}" style="width:${Wd}px;height:440px;max-width:none">
+      <div class="ah" style="top:${dy}px"></div><div class="lh" style="top:${dy + fh / 2}px">높이 ${esc(h)} mm</div>
+      <div class="aw" style="right:auto;width:${fw}px"></div><div class="lw" style="right:auto;width:${fw}px">가로 ${esc(w)} mm</div>
+      <svg style="position:absolute;left:0;top:0;overflow:visible" width="${Wd}" height="440"><defs><marker id="m" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1d2733"/></marker></defs><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#1d2733" stroke-width="2.4" marker-start="url(#m)" marker-end="url(#m)"/></svg>
+      <div class="ld" style="left:${(x1 + x2) / 2 + 22}px;right:auto;top:${(y1 + y2) / 2 - 6}px;bottom:auto">세로(깊이)<br>${esc(d)} mm</div>
+    </div>`;
+  }
   const rows = [['모델명', it.model], ...it.rows].map(([k, v]) =>
     `<tr><th>${esc(k.replace('외형 (', '외형 치수 ('))}</th><td>${esc(v)}</td></tr>`).join('');
   const isWasher = it.group.startsWith('washer');
@@ -36,7 +49,7 @@ h1{margin:0;font-size:34px;font-weight:800;letter-spacing:-.5px}
 .aw:after{right:-12px;top:-6px;border-left:12px solid #1d2733;border-right:0}
 .lw{position:absolute;left:0;right:0;bottom:-66px;font-size:21px;font-weight:700}
 .dep{position:absolute;right:-104px;bottom:-18px;width:100px;height:100px}
-.ld{position:absolute;right:-150px;bottom:-72px;font-size:19px;font-weight:700;text-align:left;line-height:1.3}
+.ld{white-space:nowrap;position:absolute;right:-150px;bottom:-72px;font-size:19px;font-weight:700;text-align:left;line-height:1.3}
 .cap{font-size:13px;color:#7b858f;margin-top:4px}
 .warn{font-size:13px;color:#6b7580;margin-top:14px}
 .spec{padding:42px 40px 30px}
@@ -58,13 +71,13 @@ tr:first-child td{font-weight:800}
   <h1>설치 전, 치수부터 확인하세요.</h1>
   <div class="sub">${esc(it.model)} 외형 치수 · 가로 × 세로(깊이) × 높이</div>
   <div class="card">
-    <div class="stage">
+    ${stage || `<div class="stage">
       <img src="${photo}">
       <div class="ah"></div><div class="lh">높이 ${esc(h)} mm</div>
       <div class="aw"></div><div class="lw">가로 ${esc(w)} mm</div>
       <svg class="dep" viewBox="0 0 100 100"><defs><marker id="m" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1d2733"/></marker></defs><line x1="12" y1="88" x2="88" y2="12" stroke="#1d2733" stroke-width="2.4" marker-start="url(#m)" marker-end="url(#m)"/></svg>
       <div class="ld">세로(깊이)<br>${esc(d)} mm</div>
-    </div>
+    </div>`}
     <div class="cap">치수 안내용 연출 이미지 · 단위 mm · 실측 비례 도면이 아닙니다.</div>
   </div>
   <div class="warn">외형 치수와 별도로 문 개방, 배관 연결, 점검에 필요한 여유 공간을 확인해야 합니다.</div>
