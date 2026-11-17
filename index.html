@@ -528,7 +528,7 @@ function renderSpecPick(){
   let h = `<div class="ttl">함께 보낼 제품 사양서<small>${specSel.length ? specSel.length + '개 선택' : '선택 안 함'}</small></div>`, g = '';
   SPECS.forEach(s => {
     if(s.group !== g){ if(g) h += '</div>'; g = s.group; h += `<div class="grp">${g}</div><div class="chips">`; }
-    h += `<button type="button" class="chip${specSel.includes(s.id) ? ' on' : ''}" onclick="toggleSpec('${s.id}')">${specSel.includes(s.id) ? '✓ ' : ''}${s.model || s.id}<small>${s.name}</small><a class="eye" href="spec/${s.id}.jpg" target="_blank" onclick="event.stopPropagation()" title="미리보기">🔍</a></button>`;
+    h += `<button type="button" class="chip${specSel.includes(s.id) ? ' on' : ''}" onclick="toggleSpec('${s.id}')">${s.model || s.id}<small>${s.name}</small><a class="eye" href="spec/${s.id}.jpg" target="_blank" onclick="event.stopPropagation()" title="미리보기">🔍</a></button>`;
   });
   h += '</div>';
   document.querySelectorAll('[data-specpick]').forEach(el => el.innerHTML = h);
