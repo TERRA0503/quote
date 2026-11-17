@@ -108,6 +108,10 @@
 
   /* 모바일 하단 고정 버튼 */
   .mbar{display:none}
+  /* 저장·보내기는 PC 상단 / 모바일 하단 바에서. 카드에는 사양서 선택만 */
+  .sendcard > h2, .sendcard > .actions{display:none}
+  .sendcard .specpick{margin-top:0}
+  @media (min-width:901px){ .sheetbg{align-items:center} .sendbox{border-radius:18px} }
   @media (max-width:900px){
     .app{grid-template-columns:1fr;padding:12px max(12px,env(safe-area-inset-left)) 96px}
     .preview-wrap{position:static}
@@ -115,9 +119,6 @@
     .mbar{display:flex;gap:8px;position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;padding:10px max(12px,env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom));box-shadow:0 -2px 12px rgba(29,52,97,.12)}
     .mbar .btn{flex:1;padding:13px}
     .mbar .btn.navy{background:var(--navy);color:#fff}
-    /* 모바일: 저장·보내기 버튼은 아래 고정 바에서, 여기선 사양서 선택만 */
-    .sendcard > h2, .sendcard > .actions{display:none}
-    .sendcard .specpick{margin-top:0}
   }
 
   /* ── 견적서 시트 (A4) ── */
@@ -196,7 +197,8 @@
   <h1>그린벨리 견적서<span>작성기</span></h1>
   <button class="btn sm desk" onclick="newQuote()">새 견적</button>
   <button class="btn sm desk" onclick="window.print()">인쇄</button>
-  <button class="btn sm green desk" onclick="savePdf()">PDF 저장</button>
+  <button class="btn sm desk" onclick="savePdf()">PDF 저장</button>
+  <button class="btn sm green desk" onclick="openSend()">보내기</button>
 </div>
 
 <div class="app">
